@@ -87,7 +87,7 @@ export function SalesTrends() {
                 tick={{ fill: '#666', fontSize: 12 }}
                 tickLine={false}
                 axisLine={{ stroke: '#e0e0e0' }}
-                tickFormatter={(value) => `$${value / 1000}k`}
+                tickFormatter={(value) => `BDT ${value / 1000}k`}
               />
               <Tooltip
                 contentStyle={{
@@ -98,7 +98,7 @@ export function SalesTrends() {
                   padding: '12px',
                 }}
                 formatter={(value: number, name: string) => [
-                  `$${value.toLocaleString()}`, 
+                  `BDT ${value.toLocaleString()}`, 
                   name === 'sales' ? 'Sales' : 'Profit'
                 ]}
               />

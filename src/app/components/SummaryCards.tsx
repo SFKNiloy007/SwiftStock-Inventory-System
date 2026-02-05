@@ -79,14 +79,14 @@ export function SummaryCards() {
   const metrics = [
     {
       title: 'Total Sales',
-      value: '$125,430',
+      value: 'BDT 125,430',
       icon: <TrendingUpIcon />,
       gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
       change: '+12.5%',
     },
     {
       title: 'Daily Profit',
-      value: '$8,240',
+      value: 'BDT 8,240',
       icon: <MonetizationOnIcon />,
       gradient: 'linear-gradient(135deg, #00c853 0%, #00897b 100%)',
       change: '+8.2%',
