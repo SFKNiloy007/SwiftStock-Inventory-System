@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { Header } from './Header';
@@ -26,6 +26,22 @@ type InventoryPageProps = {
 
 type ProductApiResponse = {
   products: Product[];
+  pagination?: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+  };
+};
+
+type CachedProductsPage = {
+  products: Product[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+  };
 };
 
 type AddProductForm = {
@@ -49,6 +65,10 @@ export function InventoryPage({
   const [categoryFilter, setCategoryFilter] = useState('');
   const [debouncedCategoryFilter, setDebouncedCategoryFilter] = useState('');
   const [products, setProducts] = useState<Product[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(20);
+  const [totalProductsCount, setTotalProductsCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [productError, setProductError] = useState('');
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
@@ -65,7 +85,43 @@ export function InventoryPage({
     image: '',
   });
 
-  const loadProducts = async (nameValue = debouncedSearchQuery, categoryValue = debouncedCategoryFilter) => {
+  const productCacheRef = useRef<Map<string, CachedProductsPage>>(new Map());
+
+  const getCacheKey = (nameValue: string, categoryValue: string, pageValue: number, pageSizeValue: number) =>
+    `${nameValue.trim().toLowerCase()}|${categoryValue.trim().toLowerCase()}|${pageValue}|${pageSizeValue}`;
+
+  const writeCache = (key: string, value: CachedProductsPage) => {
+    const cache = productCacheRef.current;
+    if (cache.has(key)) {
+      cache.delete(key);
+    }
+
+    cache.set(key, value);
+
+    if (cache.size > 25) {
+      const oldestKey = cache.keys().next().value;
+      if (oldestKey) {
+        cache.delete(oldestKey);
+      }
+    }
+  };
+
+  const loadProducts = async (
+    nameValue = debouncedSearchQuery,
+    categoryValue = debouncedCategoryFilter,
+    pageValue = currentPage,
+    pageSizeValue = pageSize
+  ) => {
+    const cacheKey = getCacheKey(nameValue, categoryValue, pageValue, pageSizeValue);
+    const cachedPage = productCacheRef.current.get(cacheKey);
+
+    if (cachedPage) {
+      setProducts(cachedPage.products);
+      setTotalProductsCount(cachedPage.pagination.total);
+      setTotalPages(cachedPage.pagination.totalPages);
+      return;
+    }
+
     setLoadingProducts(true);
     setProductError('');
 
@@ -74,10 +130,22 @@ export function InventoryPage({
         params: {
           name: nameValue.trim(),
           category: categoryValue.trim(),
+          page: pageValue,
+          pageSize: pageSizeValue,
         },
       });
 
+      const pagination = response.data.pagination ?? {
+        page: pageValue,
+        pageSize: pageSizeValue,
+        total: response.data.products.length,
+        totalPages: 1,
+      };
+
       setProducts(response.data.products);
+      setTotalProductsCount(pagination.total);
+      setTotalPages(pagination.totalPages);
+      writeCache(cacheKey, { products: response.data.products, pagination });
     } catch (error: any) {
       const message = error?.response?.data?.message ?? 'Failed to load products';
       setProductError(message);
@@ -87,6 +155,7 @@ export function InventoryPage({
   };
 
   useEffect(() => {
+    setCurrentPage(1);
     const timer = window.setTimeout(() => {
       setDebouncedSearchQuery(searchQuery);
       setDebouncedCategoryFilter(categoryFilter);
@@ -96,8 +165,8 @@ export function InventoryPage({
   }, [searchQuery, categoryFilter]);
 
   useEffect(() => {
-    loadProducts(debouncedSearchQuery, debouncedCategoryFilter);
-  }, [debouncedSearchQuery, debouncedCategoryFilter]);
+    loadProducts(debouncedSearchQuery, debouncedCategoryFilter, currentPage, pageSize);
+  }, [debouncedSearchQuery, debouncedCategoryFilter, currentPage, pageSize]);
 
   const totalStock = useMemo(
     () => products.reduce((sum, product) => sum + product.stockLevel, 0),
@@ -172,7 +241,9 @@ export function InventoryPage({
       toast.success(`Product "${addProductForm.name}" added successfully!`);
       setIsAddProductOpen(false);
       resetAddProductForm();
-      await loadProducts();
+      setCurrentPage(1);
+      productCacheRef.current.clear();
+      await loadProducts(debouncedSearchQuery, debouncedCategoryFilter, 1, pageSize);
     } catch (error: any) {
       const message = error?.response?.data?.message ?? 'Failed to add product';
       setAddProductError(message);
@@ -193,7 +264,9 @@ export function InventoryPage({
       toast.success('All products have been deleted successfully!');
       setFlushPassword('');
       setIsFlushOpen(false);
-      await loadProducts();
+      setCurrentPage(1);
+      productCacheRef.current.clear();
+      await loadProducts(debouncedSearchQuery, debouncedCategoryFilter, 1, pageSize);
     } catch (error: any) {
       const message = error?.response?.data?.message ?? 'Failed to flush products';
       setFlushError(message);
@@ -244,7 +317,7 @@ export function InventoryPage({
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <div className="rounded-[12px] border border-[#f1f5f9] bg-white p-4 shadow-[0_4px_20px_rgba(0,0,0,0.05)]">
             <p className="text-sm text-gray-500">Total Products</p>
-            <p className="mt-1 text-2xl font-semibold text-gray-900">{products.length}</p>
+            <p className="mt-1 text-2xl font-semibold text-gray-900">{totalProductsCount}</p>
           </div>
           <div className="rounded-[12px] border border-[#f1f5f9] bg-white p-4 shadow-[0_4px_20px_rgba(0,0,0,0.05)]">
             <p className="text-sm text-gray-500">Total Stock</p>
@@ -266,6 +339,35 @@ export function InventoryPage({
         )}
 
         <ProductTable products={products} userRole={userRole} canExportCsv={canUseAdminFeatures} />
+
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-[12px] border border-[#f1f5f9] bg-white px-4 py-3 shadow-[0_4px_20px_rgba(0,0,0,0.05)]">
+          <p className="text-sm text-gray-600">
+            Showing{' '}
+            {totalProductsCount === 0 ? 0 : (currentPage - 1) * pageSize + 1}
+            {' '}-{' '}
+            {Math.min(currentPage * pageSize, totalProductsCount)} of {totalProductsCount}
+          </p>
+
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+              disabled={currentPage === 1 || loadingProducts}
+            >
+              Previous
+            </Button>
+            <span className="text-sm text-gray-600">
+              Page {currentPage} / {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+              disabled={currentPage >= totalPages || loadingProducts}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
       </section>
 
       <Dialog open={isAddProductOpen} onOpenChange={setIsAddProductOpen}>

@@ -20,6 +20,8 @@ router.get(
   [
     query('name').optional().isString(),
     query('category').optional().isString(),
+    query('page').optional().isInt({ min: 1 }).withMessage('Page must be 1 or greater'),
+    query('pageSize').optional().isInt({ min: 1, max: 100 }).withMessage('Page size must be between 1 and 100'),
   ],
   async (req, res) => {
     const errors = validationResult(req);
@@ -28,15 +30,29 @@ router.get(
     }
 
     const { name = '', category = '' } = req.query;
+    const page = Math.max(1, Number(req.query.page ?? 1));
+    const pageSize = Math.min(100, Math.max(1, Number(req.query.pageSize ?? 20)));
+    const offset = (page - 1) * pageSize;
 
     try {
+      const countResult = await pool.query(
+        `SELECT COUNT(*)::int AS total
+         FROM products
+         WHERE ($1 = '' OR LOWER(product_name) LIKE LOWER('%' || $1 || '%'))
+           AND ($2 = '' OR LOWER(category) LIKE LOWER('%' || $2 || '%'))`,
+        [name, category]
+      );
+
+      const total = countResult.rows[0]?.total ?? 0;
+
       const result = await pool.query(
         `SELECT product_id, product_name, category, stock_quantity, retail_price, cost_price, image
          FROM products
          WHERE ($1 = '' OR LOWER(product_name) LIKE LOWER('%' || $1 || '%'))
            AND ($2 = '' OR LOWER(category) LIKE LOWER('%' || $2 || '%'))
-         ORDER BY product_id DESC`,
-        [name, category]
+         ORDER BY product_id DESC
+         LIMIT $3 OFFSET $4`,
+        [name, category, pageSize, offset]
       );
 
       const products = result.rows.map((row) => ({
@@ -49,7 +65,15 @@ router.get(
         image: row.image ?? '',
       }));
 
-      return res.json({ products });
+      return res.json({
+        products,
+        pagination: {
+          page,
+          pageSize,
+          total,
+          totalPages: Math.max(1, Math.ceil(total / pageSize)),
+        },
+      });
     } catch (error) {
       return res.status(500).json({ message: 'Failed to search products', error: error.message });
     }
