@@ -1,7 +1,11 @@
 import axios from 'axios';
 
+const defaultApiBaseUrl = import.meta.env.PROD
+  ? 'https://swiftstock-inventory-system.onrender.com/api'
+  : 'http://localhost:5000/api';
+
 export const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5000/api',
+  baseURL: import.meta.env.VITE_API_BASE_URL ?? defaultApiBaseUrl,
   headers: {
     'Content-Type': 'application/json',
   },
