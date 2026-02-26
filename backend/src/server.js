@@ -1,6 +1,7 @@
 import dotenv from 'dotenv';
 import app from './app.js';
 import { pool, testDbConnection } from './config/db.js';
+import { applySchemaFromFile } from './config/initDb.js';
 
 dotenv.config();
 
@@ -9,6 +10,7 @@ const HOST = process.env.HOST || '0.0.0.0';
 
 async function startServer() {
   try {
+    await applySchemaFromFile();
     await testDbConnection();
     app.listen(PORT, HOST, () => {
       console.log(`SwiftStock API running on http://localhost:${PORT}`);
