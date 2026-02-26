@@ -45,7 +45,9 @@ export function InventoryPage({
 }: InventoryPageProps) {
   const [searchExpanded, setSearchExpanded] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
+  const [debouncedCategoryFilter, setDebouncedCategoryFilter] = useState('');
   const [products, setProducts] = useState<Product[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [productError, setProductError] = useState('');
@@ -63,15 +65,15 @@ export function InventoryPage({
     image: '',
   });
 
-  const loadProducts = async () => {
+  const loadProducts = async (nameValue = debouncedSearchQuery, categoryValue = debouncedCategoryFilter) => {
     setLoadingProducts(true);
     setProductError('');
 
     try {
       const response = await apiClient.get<ProductApiResponse>('/products/search', {
         params: {
-          name: searchQuery.trim(),
-          category: categoryFilter.trim(),
+          name: nameValue.trim(),
+          category: categoryValue.trim(),
         },
       });
 
@@ -85,8 +87,17 @@ export function InventoryPage({
   };
 
   useEffect(() => {
-    loadProducts();
+    const timer = window.setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+      setDebouncedCategoryFilter(categoryFilter);
+    }, 400);
+
+    return () => window.clearTimeout(timer);
   }, [searchQuery, categoryFilter]);
+
+  useEffect(() => {
+    loadProducts(debouncedSearchQuery, debouncedCategoryFilter);
+  }, [debouncedSearchQuery, debouncedCategoryFilter]);
 
   const totalStock = useMemo(
     () => products.reduce((sum, product) => sum + product.stockLevel, 0),

@@ -14,9 +14,13 @@ CREATE TABLE IF NOT EXISTS products (
   stock_quantity INTEGER NOT NULL DEFAULT 0,
   retail_price NUMERIC(12,2) NOT NULL,
   cost_price NUMERIC(12,2) NOT NULL,
+  image TEXT,
   min_stock_level INTEGER NOT NULL DEFAULT 10,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+ALTER TABLE products
+ADD COLUMN IF NOT EXISTS image TEXT;
 
 CREATE TABLE IF NOT EXISTS suppliers (
   supplier_id SERIAL PRIMARY KEY,
@@ -27,3 +31,9 @@ CREATE TABLE IF NOT EXISTS suppliers (
   status VARCHAR(20) NOT NULL CHECK (status IN ('Active', 'Pending')),
   created_at TIMESTAMP DEFAULT NOW()
 );
+
+CREATE INDEX IF NOT EXISTS idx_products_name_lower
+ON products (LOWER(product_name));
+
+CREATE INDEX IF NOT EXISTS idx_products_category_lower
+ON products (LOWER(category));

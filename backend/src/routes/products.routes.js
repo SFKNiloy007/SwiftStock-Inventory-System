@@ -31,7 +31,7 @@ router.get(
 
     try {
       const result = await pool.query(
-        `SELECT product_id, product_name, category, stock_quantity, retail_price, cost_price
+        `SELECT product_id, product_name, category, stock_quantity, retail_price, cost_price, image
          FROM products
          WHERE ($1 = '' OR LOWER(product_name) LIKE LOWER('%' || $1 || '%'))
            AND ($2 = '' OR LOWER(category) LIKE LOWER('%' || $2 || '%'))
@@ -46,7 +46,7 @@ router.get(
         stockLevel: Number(row.stock_quantity),
         retailPrice: Number(row.retail_price),
         costPrice: Number(row.cost_price),
-        image: '',
+        image: row.image ?? '',
       }));
 
       return res.json({ products });
@@ -68,15 +68,16 @@ router.post('/', requireAuth, productValidators, async (req, res) => {
     stockLevel,
     retailPrice,
     costPrice,
+    image,
     minStockLevel = 10,
   } = req.body;
 
   try {
     const insertResult = await pool.query(
-      `INSERT INTO products (product_name, category, stock_quantity, retail_price, cost_price, min_stock_level)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       RETURNING product_id, product_name, category, stock_quantity, retail_price, cost_price`,
-      [name, category, stockLevel, retailPrice, costPrice, minStockLevel]
+      `INSERT INTO products (product_name, category, stock_quantity, retail_price, cost_price, image, min_stock_level)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       RETURNING product_id, product_name, category, stock_quantity, retail_price, cost_price, image`,
+      [name, category, stockLevel, retailPrice, costPrice, image ?? null, minStockLevel]
     );
 
     const row = insertResult.rows[0];
@@ -89,7 +90,7 @@ router.post('/', requireAuth, productValidators, async (req, res) => {
         stockLevel: Number(row.stock_quantity),
         retailPrice: Number(row.retail_price),
         costPrice: Number(row.cost_price),
-        image: '',
+        image: row.image ?? '',
       },
     });
   } catch (error) {
