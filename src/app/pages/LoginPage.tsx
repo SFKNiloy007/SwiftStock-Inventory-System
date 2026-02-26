@@ -145,7 +145,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
             <div className="space-y-1 rounded-[12px] border border-[#f1f5f9] bg-indigo-50 px-3 py-2 text-xs text-indigo-700 shadow-[0_4px_20px_rgba(0,0,0,0.05)]">
               <p>Demo login</p>
               <p>email: admin@swiftstock.com</p>
-              <p>password: admin</p>
+              <p>password: admin123</p>
             </div>
 
             {authError && <p className="text-sm text-red-600">{authError}</p>}

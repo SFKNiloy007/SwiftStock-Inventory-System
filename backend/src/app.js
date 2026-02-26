@@ -48,6 +48,13 @@ app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok' });
 });
 
+app.get('/api', (_req, res) => {
+  res.json({
+    message: 'SwiftStock API is running',
+    endpoints: ['/api/health', '/api/auth/login', '/api/auth/register', '/api/products/search'],
+  });
+});
+
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/team', teamRoutes);
