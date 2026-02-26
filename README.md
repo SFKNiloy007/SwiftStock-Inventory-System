@@ -19,7 +19,6 @@ This project now includes:
 ```bash
 cd backend
 npm install
-npm run seed
 npm run dev
 ```
 
@@ -29,6 +28,8 @@ Seeded login account:
 
 - Email: `admin@swiftstock.com`
 - Password: `admin`
+
+The backend automatically creates tables from `backend/schema.sql` and ensures the default admin account exists on startup.
 
 ## 3) Frontend setup
 
@@ -70,9 +71,9 @@ This repo includes a Render blueprint file: `render.yaml`.
 ### Database on Render
 
 - Create a PostgreSQL database on Render.
-- Run `schema.sql` against that database.
 - Set backend env vars (`DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`) from Render DB.
-- Run backend seed once: `npm run seed`.
+- Set `DB_SSL=true` on Render.
+- On deploy, backend auto-applies `backend/schema.sql` and auto-creates default admin if missing.
 
 ## 5) Postman API checklist
 
