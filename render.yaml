@@ -1,0 +1,57 @@
+databases:
+  - name: swiftstock-db
+    plan: free
+
+services:
+  - type: web
+    name: swiftstock-api
+    env: node
+    rootDir: backend
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: HOST
+        value: 0.0.0.0
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DB_HOST
+        fromDatabase:
+          name: swiftstock-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: swiftstock-db
+          property: port
+      - key: DB_USER
+        fromDatabase:
+          name: swiftstock-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: swiftstock-db
+          property: password
+      - key: DB_NAME
+        fromDatabase:
+          name: swiftstock-db
+          property: database
+      - key: CORS_ORIGINS
+        sync: false
+
+  - type: static
+    name: swiftstock-web
+    rootDir: .
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_BASE_URL
+        sync: false
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

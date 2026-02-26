@@ -1,0 +1,19 @@
+CREATE TABLE IF NOT EXISTS users (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(120) NOT NULL,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  password_hash TEXT NOT NULL,
+  role VARCHAR(20) NOT NULL CHECK (role IN ('Admin', 'Staff')),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS products (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(200) NOT NULL,
+  category VARCHAR(120) NOT NULL,
+  stock_level INTEGER NOT NULL DEFAULT 0,
+  retail_price NUMERIC(12,2) NOT NULL,
+  cost_price NUMERIC(12,2) NOT NULL,
+  image TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
