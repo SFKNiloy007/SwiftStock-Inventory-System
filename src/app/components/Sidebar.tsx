@@ -37,45 +37,87 @@ export function Sidebar({ userRole, onLogout }: SidebarProps) {
         ];
 
   return (
-    <aside className="hidden md:flex w-64 shrink-0 flex-col border-r border-slate-700 bg-gradient-to-b from-slate-900 to-indigo-950">
-      <div className="flex h-16 items-center gap-2 border-b border-slate-700 px-5">
-        <Boxes className="h-5 w-5 text-indigo-300" />
-        <span className="text-lg font-semibold text-slate-100">SwiftStock</span>
+    <>
+      <div className="border-b border-slate-700 bg-gradient-to-r from-slate-900 to-indigo-950 px-4 py-3 md:hidden">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Boxes className="h-5 w-5 text-indigo-300" />
+            <span className="text-base font-semibold text-slate-100">SwiftStock</span>
+          </div>
+          <button
+            type="button"
+            onClick={onLogout}
+            className="flex items-center gap-2 rounded-[12px] border border-indigo-400/30 bg-white/5 px-3 py-1.5 text-xs text-slate-200"
+          >
+            <LogOut className="h-3.5 w-3.5" />
+            Logout
+          </button>
+        </div>
+
+        <nav className="mt-3 flex gap-2 overflow-x-auto pb-1">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+
+            return (
+              <NavLink
+                key={`mobile-${item.to}`}
+                to={item.to}
+                className={({ isActive }) =>
+                  `flex shrink-0 items-center gap-1.5 rounded-[10px] border px-3 py-1.5 text-xs transition-all ${
+                    isActive
+                      ? 'border-indigo-300 bg-white/15 text-white'
+                      : 'border-transparent bg-white/5 text-slate-300'
+                  }`
+                }
+              >
+                <Icon className="h-3.5 w-3.5" />
+                {item.label}
+              </NavLink>
+            );
+          })}
+        </nav>
       </div>
 
-      <nav className="flex-1 px-3 py-4">
-        {navItems.map((item) => {
-          const Icon = item.icon;
+      <aside className="hidden w-64 shrink-0 flex-col border-r border-slate-700 bg-gradient-to-b from-slate-900 to-indigo-950 md:flex">
+        <div className="flex h-16 items-center gap-2 border-b border-slate-700 px-5">
+          <Boxes className="h-5 w-5 text-indigo-300" />
+          <span className="text-lg font-semibold text-slate-100">SwiftStock</span>
+        </div>
 
-          return (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              className={({ isActive }) =>
-                `mb-1 flex w-full items-center gap-3 rounded-[12px] border-l-2 px-3 py-2 text-sm transition-all ${
-                  isActive
-                    ? 'border-indigo-300 bg-white/10 text-white shadow-[0_0_18px_rgba(99,102,241,0.28)]'
-                    : 'border-transparent text-slate-300 hover:bg-white/5 hover:text-white'
-                }`
-              }
-            >
-              <Icon className="h-4 w-4" />
-              {item.label}
-            </NavLink>
-          );
-        })}
-      </nav>
+        <nav className="flex-1 px-3 py-4">
+          {navItems.map((item) => {
+            const Icon = item.icon;
 
-      <div className="border-t border-slate-700 p-3">
-        <button
-          type="button"
-          onClick={onLogout}
-          className="flex w-full items-center gap-3 rounded-[12px] border border-transparent px-3 py-2 text-sm text-slate-300 transition-all hover:border-indigo-400/30 hover:bg-white/5 hover:text-white"
-        >
-          <LogOut className="h-4 w-4" />
-          Logout
-        </button>
-      </div>
-    </aside>
+            return (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                className={({ isActive }) =>
+                  `mb-1 flex w-full items-center gap-3 rounded-[12px] border-l-2 px-3 py-2 text-sm transition-all ${
+                    isActive
+                      ? 'border-indigo-300 bg-white/10 text-white shadow-[0_0_18px_rgba(99,102,241,0.28)]'
+                      : 'border-transparent text-slate-300 hover:bg-white/5 hover:text-white'
+                  }`
+                }
+              >
+                <Icon className="h-4 w-4" />
+                {item.label}
+              </NavLink>
+            );
+          })}
+        </nav>
+
+        <div className="border-t border-slate-700 p-3">
+          <button
+            type="button"
+            onClick={onLogout}
+            className="flex w-full items-center gap-3 rounded-[12px] border border-transparent px-3 py-2 text-sm text-slate-300 transition-all hover:border-indigo-400/30 hover:bg-white/5 hover:text-white"
+          >
+            <LogOut className="h-4 w-4" />
+            Logout
+          </button>
+        </div>
+      </aside>
+    </>
   );
 }
