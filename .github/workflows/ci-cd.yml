@@ -55,22 +55,32 @@ jobs:
 
   deploy-backend:
     name: Deploy Backend (Render)
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && secrets.RENDER_BACKEND_DEPLOY_HOOK_URL != ''
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: [backend-tests, frontend-build]
     runs-on: ubuntu-latest
     steps:
       - name: Trigger backend deploy hook
-        run: curl -fsS -X POST "$RENDER_BACKEND_DEPLOY_HOOK_URL"
+        run: |
+          if [ -z "$RENDER_BACKEND_DEPLOY_HOOK_URL" ]; then
+            echo "RENDER_BACKEND_DEPLOY_HOOK_URL is not set. Skipping backend deploy."
+            exit 0
+          fi
+          curl -fsS -X POST "$RENDER_BACKEND_DEPLOY_HOOK_URL"
         env:
           RENDER_BACKEND_DEPLOY_HOOK_URL: ${{ secrets.RENDER_BACKEND_DEPLOY_HOOK_URL }}
 
   deploy-frontend:
     name: Deploy Frontend (Render)
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && secrets.RENDER_FRONTEND_DEPLOY_HOOK_URL != ''
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: [backend-tests, frontend-build]
     runs-on: ubuntu-latest
     steps:
       - name: Trigger frontend deploy hook
-        run: curl -fsS -X POST "$RENDER_FRONTEND_DEPLOY_HOOK_URL"
+        run: |
+          if [ -z "$RENDER_FRONTEND_DEPLOY_HOOK_URL" ]; then
+            echo "RENDER_FRONTEND_DEPLOY_HOOK_URL is not set. Skipping frontend deploy."
+            exit 0
+          fi
+          curl -fsS -X POST "$RENDER_FRONTEND_DEPLOY_HOOK_URL"
         env:
           RENDER_FRONTEND_DEPLOY_HOOK_URL: ${{ secrets.RENDER_FRONTEND_DEPLOY_HOOK_URL }}
