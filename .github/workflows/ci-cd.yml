@@ -1,0 +1,76 @@
+name: CI/CD
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  backend-tests:
+    name: Backend Unit Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install backend dependencies
+        run: npm ci
+
+      - name: Run backend tests
+        run: npm test
+        env:
+          DB_USER: postgres
+          DB_NAME: SwiftStock_DB
+
+  frontend-build:
+    name: Frontend Build Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: npm run build
+
+  deploy-backend:
+    name: Deploy Backend (Render)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && secrets.RENDER_BACKEND_DEPLOY_HOOK_URL != ''
+    needs: [backend-tests, frontend-build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger backend deploy hook
+        run: curl -fsS -X POST "$RENDER_BACKEND_DEPLOY_HOOK_URL"
+        env:
+          RENDER_BACKEND_DEPLOY_HOOK_URL: ${{ secrets.RENDER_BACKEND_DEPLOY_HOOK_URL }}
+
+  deploy-frontend:
+    name: Deploy Frontend (Render)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && secrets.RENDER_FRONTEND_DEPLOY_HOOK_URL != ''
+    needs: [backend-tests, frontend-build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger frontend deploy hook
+        run: curl -fsS -X POST "$RENDER_FRONTEND_DEPLOY_HOOK_URL"
+        env:
+          RENDER_FRONTEND_DEPLOY_HOOK_URL: ${{ secrets.RENDER_FRONTEND_DEPLOY_HOOK_URL }}
