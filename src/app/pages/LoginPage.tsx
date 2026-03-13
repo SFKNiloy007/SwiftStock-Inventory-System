@@ -6,6 +6,14 @@ import { Checkbox } from '../components/ui/checkbox';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '../components/ui/dialog';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -26,6 +34,12 @@ export function LoginPage({ onLogin }: LoginPageProps) {
   const [rememberMe, setRememberMe] = useState(false);
   const [selectedRole, setSelectedRole] = useState<UserRole>('Staff');
   const [authError, setAuthError] = useState('');
+  const [isRecoveryOpen, setIsRecoveryOpen] = useState(false);
+  const [recoveryEmail, setRecoveryEmail] = useState('');
+  const [recoveryNewPassword, setRecoveryNewPassword] = useState('');
+  const [recoveryPin, setRecoveryPin] = useState('');
+  const [recoveryMessage, setRecoveryMessage] = useState('');
+  const [recoveryError, setRecoveryError] = useState('');
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -57,6 +71,70 @@ export function LoginPage({ onLogin }: LoginPageProps) {
     } catch (error: any) {
       const message = error?.response?.data?.message ?? 'Login failed. Please try again.';
       setAuthError(message);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (!emailRegex.test(recoveryEmail.trim())) {
+      setRecoveryError('Please enter a valid email address');
+      return;
+    }
+
+    if (recoveryNewPassword.trim().length < 6) {
+      setRecoveryError('New password must be at least 6 characters');
+      return;
+    }
+
+    if (!recoveryPin.trim()) {
+      setRecoveryError('Emergency PIN is required');
+      return;
+    }
+
+    try {
+      await apiClient.post('/auth/forgot-password', {
+        email: recoveryEmail.trim(),
+        newPassword: recoveryNewPassword,
+        pin: recoveryPin.trim(),
+      });
+
+      setRecoveryError('');
+      setRecoveryMessage('Password updated successfully. You can now login with the new password.');
+    } catch (error: any) {
+      const message = error?.response?.data?.message ?? 'Failed to reset password';
+      setRecoveryError(message);
+      setRecoveryMessage('');
+    }
+  };
+
+  const handleEmergencyLogin = async () => {
+    if (!emailRegex.test(recoveryEmail.trim())) {
+      setRecoveryError('Please enter a valid email address');
+      return;
+    }
+
+    if (!recoveryPin.trim()) {
+      setRecoveryError('Emergency PIN is required');
+      return;
+    }
+
+    try {
+      const response = await apiClient.post('/auth/emergency-login', {
+        email: recoveryEmail.trim(),
+        pin: recoveryPin.trim(),
+      });
+
+      const { token, user } = response.data;
+      const resolvedRole = user?.role === 'Admin' || user?.role === 'Staff' ? user.role : 'Staff';
+
+      setRecoveryError('');
+      setRecoveryMessage('Emergency login successful.');
+      setIsRecoveryOpen(false);
+      onLogin(resolvedRole, token);
+      navigate(resolvedRole === 'Admin' ? '/dashboard' : '/staff-dashboard', { replace: true });
+    } catch (error: any) {
+      const message = error?.response?.data?.message ?? 'Emergency login failed';
+      setRecoveryError(message);
+      setRecoveryMessage('');
     }
   };
 
@@ -133,7 +211,18 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                 />
                 Remember me
               </label>
-              <button type="button" className="text-sm text-indigo-600 hover:text-indigo-700">
+              <button
+                type="button"
+                className="text-sm text-indigo-600 hover:text-indigo-700"
+                onClick={() => {
+                  setRecoveryEmail(email);
+                  setRecoveryNewPassword('');
+                  setRecoveryPin('');
+                  setRecoveryError('');
+                  setRecoveryMessage('');
+                  setIsRecoveryOpen(true);
+                }}
+              >
                 Forgot Password?
               </button>
             </div>
@@ -152,6 +241,65 @@ export function LoginPage({ onLogin }: LoginPageProps) {
           </form>
         </div>
       </div>
+
+      <Dialog open={isRecoveryOpen} onOpenChange={setIsRecoveryOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Recover Account</DialogTitle>
+            <DialogDescription>
+              Use your emergency PIN to reset password or login instantly.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <Label htmlFor="recovery-email">Account Email</Label>
+              <Input
+                id="recovery-email"
+                type="email"
+                value={recoveryEmail}
+                onChange={(event) => setRecoveryEmail(event.target.value)}
+                placeholder="Enter account email"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="recovery-pin">Emergency PIN</Label>
+              <Input
+                id="recovery-pin"
+                type="password"
+                value={recoveryPin}
+                onChange={(event) => setRecoveryPin(event.target.value)}
+                placeholder="Enter universal PIN"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="recovery-password">New Password (for reset)</Label>
+              <Input
+                id="recovery-password"
+                type="password"
+                value={recoveryNewPassword}
+                onChange={(event) => setRecoveryNewPassword(event.target.value)}
+                placeholder="Enter new password"
+              />
+            </div>
+
+            {recoveryError && <p className="text-sm text-red-600">{recoveryError}</p>}
+            {recoveryMessage && <p className="text-sm text-green-600">{recoveryMessage}</p>}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsRecoveryOpen(false)}>
+              Close
+            </Button>
+            <Button variant="outline" onClick={handleEmergencyLogin}>
+              Emergency Login
+            </Button>
+            <Button onClick={handleResetPassword}>Reset Password</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
