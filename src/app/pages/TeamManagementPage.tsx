@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Pencil, Trash2, UserPlus } from 'lucide-react';
-import { Avatar, AvatarFallback } from '../components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '../components/ui/avatar';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import {
@@ -28,6 +28,7 @@ type TeamMember = {
   name: string;
   role: UserRole;
   email: string;
+  avatarImage: string;
 };
 
 export function TeamManagementPage() {
@@ -37,6 +38,8 @@ export function TeamManagementPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<UserRole>('Staff');
+  const [avatarImage, setAvatarImage] = useState('');
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -66,6 +69,8 @@ export function TeamManagementPage() {
     setName('');
     setEmail('');
     setRole('Staff');
+    setAvatarImage('');
+    setAvatarFile(null);
     setEditingId(null);
   };
 
@@ -79,7 +84,20 @@ export function TeamManagementPage() {
     setName(member.name);
     setEmail(member.email);
     setRole(member.role);
+    setAvatarImage(member.avatarImage);
+    setAvatarFile(null);
     setIsDialogOpen(true);
+  };
+
+  const handleAvatarFileChange = (file: File | null) => {
+    setAvatarFile(file);
+
+    if (!file) {
+      return;
+    }
+
+    const previewUrl = URL.createObjectURL(file);
+    setAvatarImage(previewUrl);
   };
 
   const handleSave = () => {
@@ -93,15 +111,24 @@ export function TeamManagementPage() {
       return;
     }
 
-    const payload = {
-      name: name.trim(),
-      email: email.trim(),
-      role,
-    };
+    const payload = new FormData();
+    payload.append('name', name.trim());
+    payload.append('email', email.trim());
+    payload.append('role', role);
+    if (avatarImage.trim()) {
+      payload.append('avatarImage', avatarImage.trim());
+    }
+    if (avatarFile) {
+      payload.append('avatarFile', avatarFile);
+    }
 
     const request = editingId
-      ? apiClient.put(`/team/${editingId}`, payload)
-      : apiClient.post('/team', payload);
+      ? apiClient.put(`/team/${editingId}`, payload, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        })
+      : apiClient.post('/team', payload, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
 
     request
       .then(async () => {
@@ -151,6 +178,7 @@ export function TeamManagementPage() {
           >
             <div className="flex items-center justify-between">
               <Avatar className="h-12 w-12">
+                <AvatarImage src={member.avatarImage} alt={member.name} className="object-cover" />
                 <AvatarFallback className="bg-blue-100 text-blue-700">
                   {member.name
                     .split(' ')
@@ -235,6 +263,39 @@ export function TeamManagementPage() {
                   <SelectItem value="Staff">Staff</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="team-avatar-url">Photo URL (optional)</Label>
+              <Input
+                id="team-avatar-url"
+                value={avatarFile ? '' : avatarImage}
+                onChange={(event) => {
+                  setAvatarFile(null);
+                  setAvatarImage(event.target.value);
+                }}
+                placeholder="https://..."
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="team-avatar-file">Upload Photo (optional)</Label>
+              <Input
+                id="team-avatar-file"
+                type="file"
+                accept="image/*"
+                onChange={(event) => handleAvatarFileChange(event.target.files?.[0] ?? null)}
+              />
+              <p className="text-xs text-gray-500">Uploaded photo takes priority over the URL.</p>
+              <Avatar className="h-16 w-16">
+                <AvatarImage src={avatarImage} alt={name || 'Preview'} className="object-cover" />
+                <AvatarFallback className="bg-blue-100 text-blue-700">
+                  {(name || 'TM')
+                    .split(' ')
+                    .map((part) => part[0])
+                    .join('')
+                    .slice(0, 2)
+                    .toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
             </div>
           </div>
 

@@ -3,6 +3,7 @@ import express from 'express';
 import { body, param, validationResult } from 'express-validator';
 import { pool } from '../config/db.js';
 import { requireAuth } from '../middleware/auth.js';
+import { getImageValue, uploadImage } from '../middleware/imageUpload.js';
 
 const router = express.Router();
 
@@ -11,7 +12,7 @@ const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 router.get('/', requireAuth, async (_req, res) => {
   try {
     const result = await pool.query(
-      `SELECT user_id, name, email, role
+      `SELECT user_id, name, email, role, avatar_image
        FROM users
        ORDER BY user_id DESC`
     );
@@ -20,6 +21,7 @@ router.get('/', requireAuth, async (_req, res) => {
       id: String(row.user_id),
       name: row.name,
       email: row.email,
+      avatarImage: row.avatar_image ?? '',
       role: row.role === 'ADMIN' ? 'Admin' : 'Staff',
     }));
 
@@ -32,6 +34,7 @@ router.get('/', requireAuth, async (_req, res) => {
 router.post(
   '/',
   requireAuth,
+  uploadImage.single('avatarFile'),
   [
     body('name').trim().notEmpty().withMessage('Name is required'),
     body('email')
@@ -48,7 +51,7 @@ router.post(
       return res.status(400).json({ message: 'Validation failed', errors: errors.array() });
     }
 
-    const { name, email, role } = req.body;
+  const { name, email, role, avatarImage } = req.body;
 
     try {
       const existing = await pool.query('SELECT user_id FROM users WHERE email = $1', [email]);
@@ -58,12 +61,13 @@ router.post(
 
       const passwordHash = await bcrypt.hash('staff123', 10);
       const dbRole = role === 'Admin' ? 'ADMIN' : 'STAFF';
+      const imageValue = getImageValue(req.file, avatarImage);
 
       const inserted = await pool.query(
-        `INSERT INTO users (name, email, password_hash, role)
-         VALUES ($1, $2, $3, $4)
-         RETURNING user_id, name, email, role`,
-        [name, email, passwordHash, dbRole]
+        `INSERT INTO users (name, email, password_hash, avatar_image, role)
+         VALUES ($1, $2, $3, $4, $5)
+         RETURNING user_id, name, email, avatar_image, role`,
+        [name, email, passwordHash, imageValue, dbRole]
       );
 
       const row = inserted.rows[0];
@@ -73,6 +77,7 @@ router.post(
           id: String(row.user_id),
           name: row.name,
           email: row.email,
+          avatarImage: row.avatar_image ?? '',
           role: row.role === 'ADMIN' ? 'Admin' : 'Staff',
         },
       });
@@ -85,6 +90,7 @@ router.post(
 router.put(
   '/:id',
   requireAuth,
+  uploadImage.single('avatarFile'),
   [
     param('id').isInt({ min: 1 }).withMessage('Invalid member id'),
     body('name').trim().notEmpty().withMessage('Name is required'),
@@ -103,8 +109,9 @@ router.put(
     }
 
     const memberId = Number(req.params.id);
-    const { name, email, role } = req.body;
+  const { name, email, role, avatarImage } = req.body;
     const dbRole = role === 'Admin' ? 'ADMIN' : 'STAFF';
+  const imageValue = getImageValue(req.file, avatarImage);
 
     try {
       const duplicate = await pool.query(
@@ -118,10 +125,10 @@ router.put(
 
       const updated = await pool.query(
         `UPDATE users
-         SET name = $1, email = $2, role = $3
-         WHERE user_id = $4
-         RETURNING user_id, name, email, role`,
-        [name, email, dbRole, memberId]
+         SET name = $1, email = $2, avatar_image = $3, role = $4
+         WHERE user_id = $5
+         RETURNING user_id, name, email, avatar_image, role`,
+        [name, email, imageValue, dbRole, memberId]
       );
 
       if (!updated.rows.length) {
@@ -134,6 +141,7 @@ router.put(
           id: String(row.user_id),
           name: row.name,
           email: row.email,
+          avatarImage: row.avatar_image ?? '',
           role: row.role === 'ADMIN' ? 'Admin' : 'Staff',
         },
       });

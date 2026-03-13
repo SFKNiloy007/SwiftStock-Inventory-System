@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { toast } from 'sonner';
+import { ImageWithFallback } from './figma/ImageWithFallback';
 import { Header } from './Header';
 import { ProductTable } from './ProductTable';
 import { apiClient } from '../lib/api';
@@ -76,6 +77,8 @@ export function InventoryPage({
   const [isFlushOpen, setIsFlushOpen] = useState(false);
   const [flushPassword, setFlushPassword] = useState('');
   const [flushError, setFlushError] = useState('');
+  const [productImageFile, setProductImageFile] = useState<File | null>(null);
+  const [productImagePreview, setProductImagePreview] = useState('');
   const [addProductForm, setAddProductForm] = useState<AddProductForm>({
     name: '',
     category: '',
@@ -196,6 +199,20 @@ export function InventoryPage({
       costPrice: '',
       image: '',
     });
+    setProductImageFile(null);
+    setProductImagePreview('');
+  };
+
+  const handleProductImageFileChange = (file: File | null) => {
+    setProductImageFile(file);
+
+    if (!file) {
+      setProductImagePreview('');
+      return;
+    }
+
+    const previewUrl = URL.createObjectURL(file);
+    setProductImagePreview(previewUrl);
   };
 
   const handleAddProduct = async () => {
@@ -229,13 +246,25 @@ export function InventoryPage({
     try {
       setAddProductError('');
 
-      await apiClient.post('/products', {
-        name: addProductForm.name.trim(),
-        category: addProductForm.category.trim(),
-        stockLevel,
-        retailPrice,
-        costPrice,
-        image: addProductForm.image.trim() || undefined,
+      const payload = new FormData();
+      payload.append('name', addProductForm.name.trim());
+      payload.append('category', addProductForm.category.trim());
+      payload.append('stockLevel', String(stockLevel));
+      payload.append('retailPrice', String(retailPrice));
+      payload.append('costPrice', String(costPrice));
+
+      if (addProductForm.image.trim()) {
+        payload.append('image', addProductForm.image.trim());
+      }
+
+      if (productImageFile) {
+        payload.append('imageFile', productImageFile);
+      }
+
+      await apiClient.post('/products', payload, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
       });
 
       toast.success(`Product "${addProductForm.name}" added successfully!`);
@@ -441,6 +470,24 @@ export function InventoryPage({
                 onChange={(event) => handleAddProductChange('image', event.target.value)}
                 placeholder="https://..."
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="product-image-file">Upload Product Image (optional)</Label>
+              <Input
+                id="product-image-file"
+                type="file"
+                accept="image/*"
+                onChange={(event) => handleProductImageFileChange(event.target.files?.[0] ?? null)}
+              />
+              <p className="text-xs text-gray-500">Uploaded image takes priority over the URL.</p>
+              {productImagePreview && (
+                <ImageWithFallback
+                  src={productImagePreview}
+                  alt="Product preview"
+                  className="h-20 w-20 rounded-md object-cover"
+                />
+              )}
             </div>
 
             {addProductError && <p className="text-sm text-red-600">{addProductError}</p>}

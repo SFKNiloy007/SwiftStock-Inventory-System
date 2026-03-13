@@ -3,9 +3,13 @@ CREATE TABLE IF NOT EXISTS users (
   name VARCHAR(120) NOT NULL,
   email VARCHAR(255) UNIQUE NOT NULL,
   password_hash TEXT NOT NULL,
+  avatar_image TEXT,
   role VARCHAR(20) NOT NULL CHECK (role IN ('ADMIN', 'STAFF')),
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+ALTER TABLE users
+ADD COLUMN IF NOT EXISTS avatar_image TEXT;
 
 CREATE TABLE IF NOT EXISTS products (
   product_id SERIAL PRIMARY KEY,

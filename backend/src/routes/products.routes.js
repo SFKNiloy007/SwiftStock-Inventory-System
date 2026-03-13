@@ -2,6 +2,7 @@ import express from 'express';
 import { body, query, validationResult } from 'express-validator';
 import { pool } from '../config/db.js';
 import { requireAuth } from '../middleware/auth.js';
+import { getImageValue, uploadImage } from '../middleware/imageUpload.js';
 
 const router = express.Router();
 
@@ -11,7 +12,10 @@ const productValidators = [
   body('stockLevel').isInt({ min: 0 }).withMessage('Stock level must be 0 or greater'),
   body('retailPrice').isFloat({ gt: 0 }).withMessage('Retail price must be greater than 0'),
   body('costPrice').isFloat({ gt: 0 }).withMessage('Cost price must be greater than 0'),
-  body('image').optional().isURL().withMessage('Image must be a valid URL'),
+  body('image')
+    .optional({ values: 'falsy' })
+    .custom((value) => /^https?:\/\//i.test(value) || /^data:image\//i.test(value))
+    .withMessage('Image must be a valid image URL'),
   body('minStockLevel').optional().isInt({ min: 0 }).withMessage('Min stock level must be 0 or greater'),
 ];
 
@@ -80,7 +84,7 @@ router.get(
   }
 );
 
-router.post('/', requireAuth, productValidators, async (req, res) => {
+router.post('/', requireAuth, uploadImage.single('imageFile'), productValidators, async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ message: 'Validation failed', errors: errors.array() });
@@ -95,13 +99,14 @@ router.post('/', requireAuth, productValidators, async (req, res) => {
     image,
     minStockLevel = 10,
   } = req.body;
+  const imageValue = getImageValue(req.file, image);
 
   try {
     const insertResult = await pool.query(
       `INSERT INTO products (product_name, category, stock_quantity, retail_price, cost_price, image, min_stock_level)
        VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING product_id, product_name, category, stock_quantity, retail_price, cost_price, image`,
-      [name, category, stockLevel, retailPrice, costPrice, image ?? null, minStockLevel]
+      [name, category, stockLevel, retailPrice, costPrice, imageValue, minStockLevel]
     );
 
     const row = insertResult.rows[0];

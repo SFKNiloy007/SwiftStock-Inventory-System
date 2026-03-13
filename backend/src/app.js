@@ -61,6 +61,10 @@ app.use('/api/team', teamRoutes);
 app.use('/api/suppliers', suppliersRoutes);
 
 app.use((error, _req, res, _next) => {
+  if (error?.code === 'LIMIT_FILE_SIZE') {
+    return res.status(400).json({ message: 'Image file must be 2MB or smaller' });
+  }
+
   const status = Number(error?.status) || 500;
   return res.status(status).json({ message: 'Unexpected server error', error: error.message });
 });

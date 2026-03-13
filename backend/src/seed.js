@@ -9,6 +9,7 @@ async function seed() {
         name VARCHAR(120) NOT NULL,
         email VARCHAR(255) UNIQUE NOT NULL,
         password_hash TEXT NOT NULL,
+        avatar_image TEXT,
         role VARCHAR(20) NOT NULL CHECK (role IN ('ADMIN', 'STAFF')),
         created_at TIMESTAMPTZ DEFAULT NOW()
       )
@@ -22,6 +23,7 @@ async function seed() {
         stock_quantity INTEGER NOT NULL DEFAULT 0,
         retail_price NUMERIC(12,2) NOT NULL,
         cost_price NUMERIC(12,2) NOT NULL,
+        image TEXT,
         min_stock_level INTEGER NOT NULL DEFAULT 10,
         created_at TIMESTAMPTZ DEFAULT NOW()
       )
