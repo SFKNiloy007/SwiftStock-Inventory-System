@@ -1,5 +1,5 @@
 import express from 'express';
-import { body, validationResult } from 'express-validator';
+import { body, param, validationResult } from 'express-validator';
 import { pool } from '../config/db.js';
 import { requireAuth } from '../middleware/auth.js';
 
@@ -93,6 +93,53 @@ router.post(
       });
     } catch (error) {
       return res.status(500).json({ message: 'Failed to create supplier', error: error.message });
+    }
+  }
+);
+
+router.patch(
+  '/:code/status',
+  requireAuth,
+  [
+    param('code').trim().notEmpty().withMessage('Supplier code is required'),
+    body('status').isIn(['Active', 'Pending']).withMessage('Invalid status'),
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ message: 'Validation failed', errors: errors.array() });
+    }
+
+    const supplierCode = req.params.code;
+    const { status } = req.body;
+
+    try {
+      await ensureSuppliersTable();
+
+      const updated = await pool.query(
+        `UPDATE suppliers
+         SET status = $1
+         WHERE supplier_code = $2
+         RETURNING supplier_code, name, category, contact_email, status`,
+        [status, supplierCode]
+      );
+
+      if (!updated.rows.length) {
+        return res.status(404).json({ message: 'Supplier not found' });
+      }
+
+      const row = updated.rows[0];
+      return res.json({
+        supplier: {
+          id: row.supplier_code,
+          name: row.name,
+          category: row.category,
+          contact: row.contact_email,
+          status: row.status,
+        },
+      });
+    } catch (error) {
+      return res.status(500).json({ message: 'Failed to update supplier status', error: error.message });
     }
   }
 );

@@ -91,6 +91,21 @@ export function SuppliersPage() {
     }
   };
 
+  const toggleSupplierStatus = async (supplier: Supplier) => {
+    const nextStatus = supplier.status === 'Active' ? 'Pending' : 'Active';
+
+    try {
+      await apiClient.patch(`/suppliers/${supplier.id}/status`, {
+        status: nextStatus,
+      });
+
+      setErrorMessage('');
+      await loadSuppliers();
+    } catch (error: any) {
+      setErrorMessage(error?.response?.data?.message ?? 'Failed to update supplier status');
+    }
+  };
+
   return (
     <section className="space-y-6 p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -129,6 +144,7 @@ export function SuppliersPage() {
                 <TableHead>Category</TableHead>
                 <TableHead>Contact</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead className="text-right">Action</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -149,6 +165,16 @@ export function SuppliersPage() {
                     >
                       {supplier.status}
                     </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => toggleSupplierStatus(supplier)}
+                      className="min-w-24"
+                    >
+                      Mark {supplier.status === 'Active' ? 'Pending' : 'Active'}
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}
