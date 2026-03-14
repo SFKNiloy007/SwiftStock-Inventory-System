@@ -24,7 +24,7 @@ export function DashboardPage() {
             <DollarSign className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-semibold">BDT 45,231</p>
+            <p className="text-2xl font-semibold">৳ 45,231</p>
             <p className="mt-1 text-xs text-gray-500">+12.5% from last week</p>
           </CardContent>
         </Card>
@@ -35,7 +35,7 @@ export function DashboardPage() {
             <TrendingUp className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-semibold">BDT 3,842</p>
+            <p className="text-2xl font-semibold">৳ 3,842</p>
             <p className="mt-1 text-xs text-gray-500">+8.2% from yesterday</p>
           </CardContent>
         </Card>
@@ -78,7 +78,7 @@ export function DashboardPage() {
                 <p className="text-xs text-gray-500">{product.sold} units sold</p>
               </div>
               <Badge variant="outline" className="border-blue-200 bg-blue-50 text-blue-700">
-                BDT {product.revenue.toFixed(2)}
+                ৳ {product.revenue.toFixed(2)}
               </Badge>
             </div>
           ))}

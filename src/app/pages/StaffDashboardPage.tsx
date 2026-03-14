@@ -86,7 +86,7 @@ export function StaffDashboardPage() {
                 <TableRow key={sale.id}>
                   <TableCell>{sale.product}</TableCell>
                   <TableCell>{sale.quantity}</TableCell>
-                  <TableCell>BDT {sale.amount.toFixed(2)}</TableCell>
+                  <TableCell>৳ {sale.amount.toFixed(2)}</TableCell>
                   <TableCell>{sale.date}</TableCell>
                   <TableCell>{sale.time}</TableCell>
                 </TableRow>

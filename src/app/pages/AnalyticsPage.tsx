@@ -49,7 +49,7 @@ export function AnalyticsPage() {
         enabled: true,
         backgroundColor: 'rgba(15, 23, 42, 0.9)',
         callbacks: {
-          label: (context: any) => `Sales: BDT ${Number(context.raw).toLocaleString()}`,
+          label: (context: any) => `Sales: ৳ ${Number(context.raw).toLocaleString()}`,
         },
       },
     },
@@ -60,7 +60,7 @@ export function AnalyticsPage() {
     scales: {
       y: {
         ticks: {
-          callback: (value: number | string) => `BDT ${Number(value).toLocaleString()}`,
+          callback: (value: number | string) => `৳ ${Number(value).toLocaleString()}`,
         },
         grid: {
           color: '#eef2ff',
@@ -98,7 +98,7 @@ export function AnalyticsPage() {
             <BarChart3 className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-semibold">BDT {peak.toLocaleString()}</p>
+            <p className="text-2xl font-semibold">৳ {peak.toLocaleString()}</p>
           </CardContent>
         </Card>
 
