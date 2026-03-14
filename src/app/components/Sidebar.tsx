@@ -47,7 +47,7 @@ export function Sidebar({ userRole, onLogout }: SidebarProps) {
           <button
             type="button"
             onClick={onLogout}
-            className="flex items-center gap-2 rounded-[12px] border border-indigo-400/30 bg-white/5 px-3 py-1.5 text-xs text-slate-200"
+            className="flex items-center gap-2 rounded-[12px] border border-red-300/40 bg-red-500/10 px-3 py-1.5 text-xs font-medium text-white shadow-[0_8px_24px_rgba(239,68,68,0.15)] transition-all hover:border-red-200/60 hover:bg-red-500/20"
           >
             <LogOut className="h-3.5 w-3.5" />
             Logout
@@ -111,7 +111,7 @@ export function Sidebar({ userRole, onLogout }: SidebarProps) {
           <button
             type="button"
             onClick={onLogout}
-            className="flex w-full items-center gap-3 rounded-[12px] border border-transparent px-3 py-2 text-sm text-slate-300 transition-all hover:border-indigo-400/30 hover:bg-white/5 hover:text-white"
+            className="flex w-full items-center gap-3 rounded-[12px] border border-red-300/40 bg-red-500/10 px-3 py-2 text-sm font-medium text-white shadow-[0_8px_24px_rgba(239,68,68,0.15)] transition-all hover:border-red-200/60 hover:bg-red-500/20"
           >
             <LogOut className="h-4 w-4" />
             Logout
