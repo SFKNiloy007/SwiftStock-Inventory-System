@@ -37,6 +37,7 @@ export function TeamManagementPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [role, setRole] = useState<UserRole>('Staff');
   const [avatarImage, setAvatarImage] = useState('');
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
@@ -68,6 +69,7 @@ export function TeamManagementPage() {
   const resetForm = () => {
     setName('');
     setEmail('');
+    setPassword('');
     setRole('Staff');
     setAvatarImage('');
     setAvatarFile(null);
@@ -83,6 +85,7 @@ export function TeamManagementPage() {
     setEditingId(member.id);
     setName(member.name);
     setEmail(member.email);
+    setPassword('');
     setRole(member.role);
     setAvatarImage(member.avatarImage);
     setAvatarFile(null);
@@ -111,10 +114,23 @@ export function TeamManagementPage() {
       return;
     }
 
+    if (!editingId && password.trim().length < 6) {
+      setErrorMessage('Password must be at least 6 characters');
+      return;
+    }
+
+    if (editingId && password.trim() && password.trim().length < 6) {
+      setErrorMessage('Password must be at least 6 characters');
+      return;
+    }
+
     const payload = new FormData();
     payload.append('name', name.trim());
     payload.append('email', email.trim());
     payload.append('role', role);
+    if (password.trim()) {
+      payload.append('password', password.trim());
+    }
     if (avatarImage.trim()) {
       payload.append('avatarImage', avatarImage.trim());
     }
@@ -253,6 +269,18 @@ export function TeamManagementPage() {
               />
             </div>
             <div className="space-y-2">
+              <Label htmlFor="team-password">
+                {editingId ? 'New Password (optional)' : 'Password'}
+              </Label>
+              <Input
+                id="team-password"
+                type="password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                placeholder={editingId ? 'Leave blank to keep current password' : 'Enter password'}
+              />
+            </div>
+            <div className="space-y-2">
               <Label>Role</Label>
               <Select value={role} onValueChange={(value) => setRole(value as UserRole)}>
                 <SelectTrigger>
@@ -303,7 +331,10 @@ export function TeamManagementPage() {
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleSave} disabled={!name.trim() || !email.trim()}>
+            <Button
+              onClick={handleSave}
+              disabled={!name.trim() || !email.trim() || (!editingId && !password.trim())}
+            >
               Save
             </Button>
           </DialogFooter>

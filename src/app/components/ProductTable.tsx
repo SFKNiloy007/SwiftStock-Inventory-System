@@ -95,11 +95,11 @@ export function ProductTable({ products, userRole, canExportCsv }: ProductTableP
                 </td>
                 {userRole === 'Admin' && (
                   <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
-                    ${product.costPrice.toFixed(2)}
+                    BDT {product.costPrice.toFixed(2)}
                   </td>
                 )}
                 <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">
-                  ${product.retailPrice.toFixed(2)}
+                  BDT {product.retailPrice.toFixed(2)}
                 </td>
               </tr>
             ))}

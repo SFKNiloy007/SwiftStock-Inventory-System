@@ -43,6 +43,10 @@ router.post(
       .withMessage('Email is required')
       .custom((value) => emailRegex.test(value))
       .withMessage('Valid email is required'),
+    body('password')
+      .trim()
+      .isLength({ min: 6 })
+      .withMessage('Password must be at least 6 characters'),
     body('role').isIn(['Admin', 'Staff']).withMessage('Role must be Admin or Staff'),
   ],
   async (req, res) => {
@@ -51,7 +55,7 @@ router.post(
       return res.status(400).json({ message: 'Validation failed', errors: errors.array() });
     }
 
-  const { name, email, role, avatarImage } = req.body;
+    const { name, email, password, role, avatarImage } = req.body;
 
     try {
       const existing = await pool.query('SELECT user_id FROM users WHERE email = $1', [email]);
@@ -59,7 +63,7 @@ router.post(
         return res.status(409).json({ message: 'Email already exists' });
       }
 
-      const passwordHash = await bcrypt.hash('staff123', 10);
+      const passwordHash = await bcrypt.hash(password, 10);
       const dbRole = role === 'Admin' ? 'ADMIN' : 'STAFF';
       const imageValue = getImageValue(req.file, avatarImage);
 
@@ -100,6 +104,11 @@ router.put(
       .withMessage('Email is required')
       .custom((value) => emailRegex.test(value))
       .withMessage('Valid email is required'),
+    body('password')
+      .optional({ values: 'falsy' })
+      .trim()
+      .isLength({ min: 6 })
+      .withMessage('Password must be at least 6 characters'),
     body('role').isIn(['Admin', 'Staff']).withMessage('Role must be Admin or Staff'),
   ],
   async (req, res) => {
@@ -109,9 +118,9 @@ router.put(
     }
 
     const memberId = Number(req.params.id);
-  const { name, email, role, avatarImage } = req.body;
+    const { name, email, password, role, avatarImage } = req.body;
     const dbRole = role === 'Admin' ? 'ADMIN' : 'STAFF';
-  const imageValue = getImageValue(req.file, avatarImage);
+    const imageValue = getImageValue(req.file, avatarImage);
 
     try {
       const duplicate = await pool.query(
@@ -123,12 +132,18 @@ router.put(
         return res.status(409).json({ message: 'Email already exists' });
       }
 
+      const nextPasswordHash = password ? await bcrypt.hash(password, 10) : null;
+
       const updated = await pool.query(
         `UPDATE users
-         SET name = $1, email = $2, avatar_image = $3, role = $4
-         WHERE user_id = $5
+         SET name = $1,
+             email = $2,
+             avatar_image = $3,
+             role = $4,
+             password_hash = COALESCE($5, password_hash)
+         WHERE user_id = $6
          RETURNING user_id, name, email, avatar_image, role`,
-        [name, email, imageValue, dbRole, memberId]
+        [name, email, imageValue, dbRole, nextPasswordHash, memberId]
       );
 
       if (!updated.rows.length) {
