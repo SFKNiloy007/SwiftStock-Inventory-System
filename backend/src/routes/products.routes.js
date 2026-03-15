@@ -1,5 +1,5 @@
 import express from 'express';
-import { body, query, validationResult } from 'express-validator';
+import { body, param, query, validationResult } from 'express-validator';
 import { pool } from '../config/db.js';
 import { requireAdmin, requireAuth } from '../middleware/auth.js';
 import { getImageValue, uploadImage } from '../middleware/imageUpload.js';
@@ -50,7 +50,7 @@ router.get(
       const total = countResult.rows[0]?.total ?? 0;
 
       const result = await pool.query(
-        `SELECT product_id, product_name, category, stock_quantity, retail_price, cost_price, image
+        `SELECT product_id, product_name, category, stock_quantity, retail_price, cost_price, image, min_stock_level
          FROM products
          WHERE ($1 = '' OR LOWER(product_name) LIKE LOWER('%' || $1 || '%'))
            AND ($2 = '' OR LOWER(category) LIKE LOWER('%' || $2 || '%'))
@@ -67,6 +67,7 @@ router.get(
         retailPrice: Number(row.retail_price),
         costPrice: Number(row.cost_price),
         image: row.image ?? '',
+        minStockLevel: Number(row.min_stock_level ?? 10),
       }));
 
       return res.json({
@@ -105,7 +106,7 @@ router.post('/', requireAuth, requireAdmin, uploadImage.single('imageFile'), pro
     const insertResult = await pool.query(
       `INSERT INTO products (product_name, category, stock_quantity, retail_price, cost_price, image, min_stock_level)
        VALUES ($1, $2, $3, $4, $5, $6, $7)
-       RETURNING product_id, product_name, category, stock_quantity, retail_price, cost_price, image`,
+       RETURNING product_id, product_name, category, stock_quantity, retail_price, cost_price, image, min_stock_level`,
       [name, category, stockLevel, retailPrice, costPrice, imageValue, minStockLevel]
     );
 
@@ -120,12 +121,84 @@ router.post('/', requireAuth, requireAdmin, uploadImage.single('imageFile'), pro
         retailPrice: Number(row.retail_price),
         costPrice: Number(row.cost_price),
         image: row.image ?? '',
+        minStockLevel: Number(row.min_stock_level ?? 10),
       },
     });
   } catch (error) {
     return res.status(500).json({ message: 'Failed to add product', error: error.message });
   }
 });
+
+router.patch(
+  '/:id/sell',
+  requireAuth,
+  [
+    param('id').isInt({ min: 1 }).withMessage('Invalid product id'),
+    body('quantity')
+      .optional()
+      .isInt({ min: 1 })
+      .withMessage('Quantity must be at least 1'),
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ message: 'Validation failed', errors: errors.array() });
+    }
+
+    const productId = Number(req.params.id);
+    const quantity = Number(req.body?.quantity ?? 1);
+
+    try {
+      const stockResult = await pool.query(
+        `SELECT product_id, product_name, category, stock_quantity, retail_price, cost_price, image, min_stock_level
+         FROM products
+         WHERE product_id = $1`,
+        [productId]
+      );
+
+      if (!stockResult.rows.length) {
+        return res.status(404).json({ message: 'Product not found' });
+      }
+
+      const current = stockResult.rows[0];
+      const currentStock = Number(current.stock_quantity);
+
+      if (currentStock < quantity) {
+        return res.status(400).json({
+          message: `Insufficient stock. Available quantity: ${currentStock}`,
+        });
+      }
+
+      const updatedResult = await pool.query(
+        `UPDATE products
+         SET stock_quantity = stock_quantity - $1
+         WHERE product_id = $2
+         RETURNING product_id, product_name, category, stock_quantity, retail_price, cost_price, image, min_stock_level`,
+        [quantity, productId]
+      );
+
+      const updated = updatedResult.rows[0];
+      const stockLevel = Number(updated.stock_quantity);
+      const minStockLevel = Number(updated.min_stock_level ?? 10);
+
+      return res.json({
+        product: {
+          id: updated.product_id,
+          name: updated.product_name,
+          category: updated.category,
+          stockLevel,
+          retailPrice: Number(updated.retail_price),
+          costPrice: Number(updated.cost_price),
+          image: updated.image ?? '',
+          minStockLevel,
+        },
+        lowStock: stockLevel <= minStockLevel,
+      });
+    } catch (error) {
+      return res.status(500).json({ message: 'Failed to complete sale', error: error.message });
+    }
+  }
+);
 
 router.delete('/flush', requireAuth, requireAdmin, async (req, res) => {
   const { password } = req.body ?? {};

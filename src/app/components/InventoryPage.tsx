@@ -72,6 +72,7 @@ export function InventoryPage({
   const [totalProductsCount, setTotalProductsCount] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [loadingProducts, setLoadingProducts] = useState(false);
+  const [sellingProductId, setSellingProductId] = useState<number | null>(null);
   const [productError, setProductError] = useState('');
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
   const [addProductError, setAddProductError] = useState('');
@@ -90,6 +91,7 @@ export function InventoryPage({
   });
 
   const productCacheRef = useRef<Map<string, CachedProductsPage>>(new Map());
+  const lowStockAlertRef = useRef<Set<string>>(new Set());
 
   const getCacheKey = (nameValue: string, categoryValue: string, pageValue: number, pageSizeValue: number) =>
     `${nameValue.trim().toLowerCase()}|${categoryValue.trim().toLowerCase()}|${pageValue}|${pageSizeValue}`;
@@ -310,6 +312,56 @@ export function InventoryPage({
     }
   };
 
+  const handleSellProduct = async (product: Product) => {
+    if (product.stockLevel <= 0) {
+      toast.error('Product is out of stock');
+      return;
+    }
+
+    setSellingProductId(product.id);
+
+    try {
+      const response = await apiClient.patch(`/products/${product.id}/sell`, { quantity: 1 });
+      const updatedProduct: Product = response.data.product;
+      const lowStock = Boolean(response.data.lowStock);
+
+      setProducts((current) =>
+        current.map((item) => (item.id === updatedProduct.id ? { ...item, ...updatedProduct } : item))
+      );
+
+      productCacheRef.current.clear();
+      toast.success(`Sold 1 unit of ${product.name}`);
+
+      if (lowStock) {
+        toast.warning(`Low stock alert: ${updatedProduct.name} has only ${updatedProduct.stockLevel} units left`);
+      }
+    } catch (error: any) {
+      const message = error?.response?.data?.message ?? 'Failed to complete sale';
+      toast.error(message);
+    } finally {
+      setSellingProductId(null);
+    }
+  };
+
+  useEffect(() => {
+    products.forEach((product) => {
+      const minStockLevel = product.minStockLevel ?? 10;
+
+      if (product.stockLevel > minStockLevel) {
+        return;
+      }
+
+      const alertKey = `${product.id}:${product.stockLevel}`;
+
+      if (lowStockAlertRef.current.has(alertKey)) {
+        return;
+      }
+
+      lowStockAlertRef.current.add(alertKey);
+      toast.warning(`Low stock alert: ${product.name} has ${product.stockLevel} units left`);
+    });
+  }, [products]);
+
   return (
     <>
       <Header
@@ -376,7 +428,13 @@ export function InventoryPage({
           </div>
         )}
 
-        <ProductTable products={products} userRole={userRole} canExportCsv={canUseAdminFeatures} />
+        <ProductTable
+          products={products}
+          userRole={userRole}
+          canExportCsv={canUseAdminFeatures}
+          onSellProduct={handleSellProduct}
+          sellingProductId={sellingProductId}
+        />
 
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-[12px] border border-[#f1f5f9] bg-white px-4 py-3 shadow-[0_4px_20px_rgba(0,0,0,0.05)]">
           <p className="text-sm text-gray-600">

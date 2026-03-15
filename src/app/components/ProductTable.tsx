@@ -1,4 +1,4 @@
-import { Download } from 'lucide-react';
+import { Download, ShoppingCart } from 'lucide-react';
 import { mkConfig, generateCsv, download } from 'export-to-csv';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { Badge } from './ui/badge';
@@ -9,15 +9,23 @@ type ProductTableProps = {
   products: Product[];
   userRole: UserRole;
   canExportCsv: boolean;
+  onSellProduct: (product: Product) => void;
+  sellingProductId: number | null;
 };
 
-function getStockBadgeColor(stock: number) {
-  if (stock < 15) return 'bg-red-100 text-red-700 border-red-200';
+function getStockBadgeColor(stock: number, minStockLevel: number) {
+  if (stock <= minStockLevel) return 'bg-red-100 text-red-700 border-red-200';
   if (stock < 50) return 'bg-yellow-100 text-yellow-700 border-yellow-200';
   return 'bg-green-100 text-green-700 border-green-200';
 }
 
-export function ProductTable({ products, userRole, canExportCsv }: ProductTableProps) {
+export function ProductTable({
+  products,
+  userRole,
+  canExportCsv,
+  onSellProduct,
+  sellingProductId,
+}: ProductTableProps) {
   const hasAdminAccess = userRole === 'Admin' || userRole === 'Owner';
 
   const handleExportCsv = () => {
@@ -66,14 +74,18 @@ export function ProductTable({ products, userRole, canExportCsv }: ProductTableP
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Cost Price</th>
               )}
               <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Retail Price</th>
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#f1f5f9] bg-white">
-            {products.map((product, index) => (
-              <tr
-                key={product.id}
-                className={`transition-colors hover:bg-blue-50/50 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/40'}`}
-              >
+            {products.map((product, index) => {
+              const minStockLevel = product.minStockLevel ?? 10;
+
+              return (
+                <tr
+                  key={product.id}
+                  className={`transition-colors hover:bg-blue-50/50 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/40'}`}
+                >
                 <td className="whitespace-nowrap px-6 py-4">
                   <ImageWithFallback src={product.image} alt={product.name} className="h-12 w-12 rounded-md object-cover" />
                 </td>
@@ -85,10 +97,10 @@ export function ProductTable({ products, userRole, canExportCsv }: ProductTableP
                 </td>
                 <td className="whitespace-nowrap px-6 py-4">
                   <div className="flex items-center gap-2">
-                    <Badge variant="outline" className={getStockBadgeColor(product.stockLevel)}>
+                    <Badge variant="outline" className={getStockBadgeColor(product.stockLevel, minStockLevel)}>
                       {product.stockLevel} units
                     </Badge>
-                    {product.stockLevel < 15 && (
+                    {product.stockLevel <= minStockLevel && (
                       <Badge variant="outline" className="border-red-300 bg-red-100 text-red-700">
                         Low Stock
                       </Badge>
@@ -103,8 +115,22 @@ export function ProductTable({ products, userRole, canExportCsv }: ProductTableP
                 <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">
                   ৳ {product.retailPrice.toFixed(2)}
                 </td>
-              </tr>
-            ))}
+                <td className="whitespace-nowrap px-6 py-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="gap-1"
+                    onClick={() => onSellProduct(product)}
+                    disabled={sellingProductId === product.id || product.stockLevel <= 0}
+                  >
+                    <ShoppingCart className="h-3.5 w-3.5" />
+                    Sell
+                  </Button>
+                </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

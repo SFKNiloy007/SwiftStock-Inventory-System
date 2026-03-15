@@ -13,6 +13,7 @@ export type Product = {
   name: string;
   category: string;
   stockLevel: number;
+  minStockLevel?: number;
   retailPrice: number;
   costPrice: number;
 };
