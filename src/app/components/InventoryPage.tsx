@@ -217,6 +217,12 @@ export function InventoryPage({
   };
 
   const handleAddProduct = async () => {
+    if (!hasAdminAccess) {
+      setAddProductError('Only Owner/Admin can add products');
+      toast.error('Only Owner/Admin can add products');
+      return;
+    }
+
     if (
       !addProductForm.name.trim() ||
       !addProductForm.category.trim() ||
@@ -325,10 +331,12 @@ export function InventoryPage({
             className="max-w-xs"
           />
 
-          <Button onClick={() => setIsAddProductOpen(true)} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Add Product
-          </Button>
+          {hasAdminAccess && (
+            <Button onClick={() => setIsAddProductOpen(true)} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Add Product
+            </Button>
+          )}
 
           {canUseAdminFeatures && (
             <Button
@@ -400,7 +408,7 @@ export function InventoryPage({
         </div>
       </section>
 
-      <Dialog open={isAddProductOpen} onOpenChange={setIsAddProductOpen}>
+      <Dialog open={hasAdminAccess && isAddProductOpen} onOpenChange={setIsAddProductOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Add Product</DialogTitle>

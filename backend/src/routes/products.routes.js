@@ -84,7 +84,7 @@ router.get(
   }
 );
 
-router.post('/', requireAuth, uploadImage.single('imageFile'), productValidators, async (req, res) => {
+router.post('/', requireAuth, requireAdmin, uploadImage.single('imageFile'), productValidators, async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ message: 'Validation failed', errors: errors.array() });
