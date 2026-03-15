@@ -1,7 +1,7 @@
 import express from 'express';
 import { body, query, validationResult } from 'express-validator';
 import { pool } from '../config/db.js';
-import { requireAuth } from '../middleware/auth.js';
+import { requireAdmin, requireAuth } from '../middleware/auth.js';
 import { getImageValue, uploadImage } from '../middleware/imageUpload.js';
 
 const router = express.Router();
@@ -127,14 +127,15 @@ router.post('/', requireAuth, uploadImage.single('imageFile'), productValidators
   }
 });
 
-router.delete('/flush', requireAuth, async (req, res) => {
+router.delete('/flush', requireAuth, requireAdmin, async (req, res) => {
   const { password } = req.body ?? {};
+  const expectedFlushPassword = process.env.FLUSH_PASSWORD;
 
-  if (req.user?.role !== 'Admin') {
-    return res.status(403).json({ message: 'Only admin can flush products' });
+  if (!expectedFlushPassword) {
+    return res.status(500).json({ message: 'Flush password is not configured on server' });
   }
 
-  if (password !== '1234') {
+  if (password !== expectedFlushPassword) {
     return res.status(401).json({ message: 'Invalid flush password' });
   }
 

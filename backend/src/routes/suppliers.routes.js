@@ -1,7 +1,7 @@
 import express from 'express';
 import { body, param, validationResult } from 'express-validator';
 import { pool } from '../config/db.js';
-import { requireAuth } from '../middleware/auth.js';
+import { requireAdmin, requireAuth } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -53,6 +53,7 @@ router.get('/', requireAuth, async (req, res) => {
 router.post(
   '/',
   requireAuth,
+  requireAdmin,
   [
     body('name').trim().notEmpty().withMessage('Name is required'),
     body('category').trim().notEmpty().withMessage('Category is required'),
@@ -100,6 +101,7 @@ router.post(
 router.patch(
   '/:code/status',
   requireAuth,
+  requireAdmin,
   [
     param('code').trim().notEmpty().withMessage('Supplier code is required'),
     body('status').isIn(['Active', 'Pending']).withMessage('Invalid status'),

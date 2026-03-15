@@ -2,14 +2,14 @@ import bcrypt from 'bcryptjs';
 import express from 'express';
 import { body, param, validationResult } from 'express-validator';
 import { pool } from '../config/db.js';
-import { requireAuth } from '../middleware/auth.js';
+import { requireAdmin, requireAuth } from '../middleware/auth.js';
 import { getImageValue, uploadImage } from '../middleware/imageUpload.js';
 
 const router = express.Router();
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-router.get('/', requireAuth, async (_req, res) => {
+router.get('/', requireAuth, requireAdmin, async (_req, res) => {
   try {
     const result = await pool.query(
       `SELECT user_id, name, email, role, avatar_image
@@ -34,6 +34,7 @@ router.get('/', requireAuth, async (_req, res) => {
 router.post(
   '/',
   requireAuth,
+  requireAdmin,
   uploadImage.single('avatarFile'),
   [
     body('name').trim().notEmpty().withMessage('Name is required'),
@@ -94,6 +95,7 @@ router.post(
 router.put(
   '/:id',
   requireAuth,
+  requireAdmin,
   uploadImage.single('avatarFile'),
   [
     param('id').isInt({ min: 1 }).withMessage('Invalid member id'),
@@ -166,7 +168,7 @@ router.put(
   }
 );
 
-router.delete('/:id', requireAuth, [param('id').isInt({ min: 1 })], async (req, res) => {
+router.delete('/:id', requireAuth, requireAdmin, [param('id').isInt({ min: 1 })], async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ message: 'Validation failed', errors: errors.array() });

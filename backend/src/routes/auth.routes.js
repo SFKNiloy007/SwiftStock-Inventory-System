@@ -17,7 +17,6 @@ const registerValidators = [
   body('password')
     .isLength({ min: 6 })
     .withMessage('Password must be at least 6 characters'),
-  body('role').optional().isIn(['Admin', 'Staff']).withMessage('Role must be Admin or Staff'),
 ];
 
 const emergencyLoginValidators = [
@@ -57,7 +56,11 @@ function createAuthPayload(user) {
 }
 
 function validateEmergencyPin(pin) {
-  const expectedPin = process.env.EMERGENCY_LOGIN_PIN || '1234';
+  const expectedPin = process.env.EMERGENCY_LOGIN_PIN;
+  if (!expectedPin) {
+    return false;
+  }
+
   return pin === expectedPin;
 }
 
@@ -157,8 +160,13 @@ router.post('/register', registerValidators, async (req, res) => {
     return res.status(400).json({ message: 'Validation failed', errors: errors.array() });
   }
 
-  const { name, email, password, role = 'Staff' } = req.body;
-  const dbRole = role === 'Admin' ? 'ADMIN' : 'STAFF';
+  const { name, email, password, role } = req.body;
+
+  if (role && role !== 'Staff') {
+    return res.status(403).json({ message: 'Self-registration is restricted to Staff role' });
+  }
+
+  const dbRole = 'STAFF';
 
   try {
     const existing = await pool.query('SELECT user_id FROM users WHERE email = $1', [email]);
