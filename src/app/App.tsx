@@ -124,7 +124,7 @@ export default function App() {
           <Route path="sales-history" element={<SalesHistoryPage />} />
           <Route path="suppliers" element={<SuppliersPage />} />
           <Route path="analytics" element={<AnalyticsPage />} />
-          <Route path="settings" element={<SettingsPage />} />
+          <Route path="settings" element={<SettingsPage userRole={accountRole} />} />
         </Route>
 
         <Route path="*" element={<Navigate to={isAuthenticated ? defaultRoute : '/login'} replace />} />

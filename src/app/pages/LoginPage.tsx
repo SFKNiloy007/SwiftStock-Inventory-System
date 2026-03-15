@@ -48,7 +48,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
   const [recoveryError, setRecoveryError] = useState('');
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  const resolvedLoginSideImage = allowLoginImageUpload ? customSideImage || loginSideImage : loginSideImage;
+  const resolvedLoginSideImage = customSideImage || loginSideImage;
 
   useEffect(() => {
     if (!allowLoginImageUpload) {
