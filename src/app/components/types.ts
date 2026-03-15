@@ -1,4 +1,4 @@
-export type UserRole = 'Admin' | 'Staff';
+export type UserRole = 'Owner' | 'Admin' | 'Staff';
 
 export type NavigationSection =
   | 'Dashboard'

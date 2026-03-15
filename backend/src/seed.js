@@ -10,10 +10,13 @@ async function seed() {
         email VARCHAR(255) UNIQUE NOT NULL,
         password_hash TEXT NOT NULL,
         avatar_image TEXT,
+        is_owner BOOLEAN NOT NULL DEFAULT FALSE,
         role VARCHAR(20) NOT NULL CHECK (role IN ('ADMIN', 'STAFF')),
         created_at TIMESTAMPTZ DEFAULT NOW()
       )
     `);
+
+    await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS is_owner BOOLEAN NOT NULL DEFAULT FALSE');
 
     await pool.query(`
       CREATE TABLE IF NOT EXISTS products (
@@ -34,13 +37,14 @@ async function seed() {
     if (!adminExists.rows.length) {
       const passwordHash = await bcrypt.hash('admin', 10);
       await pool.query(
-        `INSERT INTO users (name, email, password_hash, role)
-         VALUES ($1, $2, $3, $4)`,
-        ['System Admin', 'admin@swiftstock.com', passwordHash, 'ADMIN']
+        `INSERT INTO users (name, email, password_hash, role, is_owner)
+         VALUES ($1, $2, $3, $4, $5)`,
+        ['System Admin', 'admin@swiftstock.com', passwordHash, 'ADMIN', true]
       );
       console.log('Admin user created: admin@swiftstock.com / admin');
     } else {
       console.log('Admin user already exists');
+      await pool.query('UPDATE users SET role = $1, is_owner = TRUE WHERE email = $2', ['ADMIN', 'admin@swiftstock.com']);
     }
 
     const productsCount = await pool.query('SELECT COUNT(*)::int AS count FROM products');

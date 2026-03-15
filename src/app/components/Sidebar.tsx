@@ -18,8 +18,10 @@ type SidebarProps = {
 };
 
 export function Sidebar({ userRole, onLogout }: SidebarProps) {
+  const hasAdminAccess = userRole === 'Admin' || userRole === 'Owner';
+
   const navItems =
-    userRole === 'Admin'
+    hasAdminAccess
       ? [
           { label: 'Dashboard', icon: LayoutDashboard, to: '/dashboard' },
           { label: 'Products', icon: Package, to: '/products' },

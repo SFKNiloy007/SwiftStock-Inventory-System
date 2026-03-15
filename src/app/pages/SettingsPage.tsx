@@ -24,7 +24,7 @@ export function SettingsPage({ userRole }: SettingsPageProps) {
   const [loginImagePreview, setLoginImagePreview] = useState(initialCustomImage || defaultLoginSideImage);
   const [uploadMessage, setUploadMessage] = useState('');
   const [uploadError, setUploadError] = useState('');
-  const canManageLoginImage = userRole === 'Admin';
+  const canManageLoginImage = userRole === 'Admin' || userRole === 'Owner';
 
   const hasCustomLoginImage = useMemo(
     () => Boolean(window.localStorage.getItem(loginImageStorageKey)),

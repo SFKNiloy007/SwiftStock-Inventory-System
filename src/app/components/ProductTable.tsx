@@ -18,6 +18,8 @@ function getStockBadgeColor(stock: number) {
 }
 
 export function ProductTable({ products, userRole, canExportCsv }: ProductTableProps) {
+  const hasAdminAccess = userRole === 'Admin' || userRole === 'Owner';
+
   const handleExportCsv = () => {
     const csvConfig = mkConfig({ useKeysAsHeaders: true, filename: 'swiftstock-products' });
 
@@ -60,7 +62,7 @@ export function ProductTable({ products, userRole, canExportCsv }: ProductTableP
               <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Product Name</th>
               <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Category</th>
               <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Stock Level</th>
-              {userRole === 'Admin' && (
+              {hasAdminAccess && (
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Cost Price</th>
               )}
               <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Retail Price</th>
@@ -93,7 +95,7 @@ export function ProductTable({ products, userRole, canExportCsv }: ProductTableP
                     )}
                   </div>
                 </td>
-                {userRole === 'Admin' && (
+                {hasAdminAccess && (
                   <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
                     ৳ {product.costPrice.toFixed(2)}
                   </td>

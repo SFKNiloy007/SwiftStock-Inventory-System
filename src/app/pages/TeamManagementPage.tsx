@@ -64,7 +64,10 @@ export function TeamManagementPage() {
     loadMembers();
   }, []);
 
-  const adminCount = useMemo(() => members.filter((member) => member.role === 'Admin').length, [members]);
+  const adminCount = useMemo(
+    () => members.filter((member) => member.role === 'Admin' || member.role === 'Owner').length,
+    [members]
+  );
 
   const resetForm = () => {
     setName('');
@@ -187,11 +190,14 @@ export function TeamManagementPage() {
       {errorMessage && <p className="text-sm text-red-600">{errorMessage}</p>}
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {members.map((member) => (
-          <div
-            key={member.id}
-            className="rounded-[12px] border border-[#f1f5f9] bg-white p-5 shadow-[0_4px_20px_rgba(0,0,0,0.05)]"
-          >
+        {members.map((member) => {
+          const isOwner = member.role === 'Owner';
+
+          return (
+            <div
+              key={member.id}
+              className="rounded-[12px] border border-[#f1f5f9] bg-white p-5 shadow-[0_4px_20px_rgba(0,0,0,0.05)]"
+            >
             <div className="flex items-center justify-between">
               <Avatar className="h-12 w-12">
                 <AvatarImage src={member.avatarImage} alt={member.name} className="object-cover" />
@@ -214,6 +220,7 @@ export function TeamManagementPage() {
                 <button
                   type="button"
                   onClick={() => handleDelete(member.id)}
+                  disabled={isOwner}
                   className="rounded-[12px] p-1.5 text-red-600 transition-colors hover:bg-red-50"
                 >
                   <Trash2 className="h-4 w-4" />
@@ -226,15 +233,16 @@ export function TeamManagementPage() {
             <Badge
               variant="outline"
               className={
-                member.role === 'Admin'
+                member.role === 'Admin' || member.role === 'Owner'
                   ? 'mt-3 border-blue-200 bg-blue-50 text-blue-700'
                   : 'mt-3 border-gray-200 bg-gray-50 text-gray-700'
               }
             >
               {member.role}
             </Badge>
-          </div>
-        ))}
+            </div>
+          );
+        })}
       </div>
 
       <div className="rounded-[12px] border border-[#f1f5f9] bg-white p-4 text-sm text-gray-600 shadow-[0_4px_20px_rgba(0,0,0,0.05)]">
@@ -287,6 +295,7 @@ export function TeamManagementPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="Owner">Owner</SelectItem>
                   <SelectItem value="Admin">Admin</SelectItem>
                   <SelectItem value="Staff">Staff</SelectItem>
                 </SelectContent>

@@ -9,10 +9,26 @@ const router = express.Router();
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+function toApiRole(row) {
+  if (row.is_owner) {
+    return 'Owner';
+  }
+
+  return row.role === 'ADMIN' ? 'Admin' : 'Staff';
+}
+
+function toDbRole(apiRole) {
+  if (apiRole === 'Staff') {
+    return 'STAFF';
+  }
+
+  return 'ADMIN';
+}
+
 router.get('/', requireAuth, requireAdmin, async (_req, res) => {
   try {
     const result = await pool.query(
-      `SELECT user_id, name, email, role, avatar_image
+      `SELECT user_id, name, email, role, is_owner, avatar_image
        FROM users
        ORDER BY user_id DESC`
     );
@@ -22,7 +38,7 @@ router.get('/', requireAuth, requireAdmin, async (_req, res) => {
       name: row.name,
       email: row.email,
       avatarImage: row.avatar_image ?? '',
-      role: row.role === 'ADMIN' ? 'Admin' : 'Staff',
+      role: toApiRole(row),
     }));
 
     return res.json({ members });
@@ -48,7 +64,7 @@ router.post(
       .trim()
       .isLength({ min: 6 })
       .withMessage('Password must be at least 6 characters'),
-    body('role').isIn(['Admin', 'Staff']).withMessage('Role must be Admin or Staff'),
+    body('role').isIn(['Owner', 'Admin', 'Staff']).withMessage('Role must be Owner, Admin, or Staff'),
   ],
   async (req, res) => {
     const errors = validationResult(req);
@@ -65,14 +81,22 @@ router.post(
       }
 
       const passwordHash = await bcrypt.hash(password, 10);
-      const dbRole = role === 'Admin' ? 'ADMIN' : 'STAFF';
+      const dbRole = toDbRole(role);
+      const isOwner = role === 'Owner';
       const imageValue = getImageValue(req.file, avatarImage);
 
+      if (isOwner) {
+        const ownerCheck = await pool.query('SELECT user_id FROM users WHERE is_owner = TRUE LIMIT 1');
+        if (ownerCheck.rows.length) {
+          return res.status(409).json({ message: 'An owner account already exists' });
+        }
+      }
+
       const inserted = await pool.query(
-        `INSERT INTO users (name, email, password_hash, avatar_image, role)
-         VALUES ($1, $2, $3, $4, $5)
-         RETURNING user_id, name, email, avatar_image, role`,
-        [name, email, passwordHash, imageValue, dbRole]
+        `INSERT INTO users (name, email, password_hash, avatar_image, role, is_owner)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         RETURNING user_id, name, email, avatar_image, role, is_owner`,
+        [name, email, passwordHash, imageValue, dbRole, isOwner]
       );
 
       const row = inserted.rows[0];
@@ -83,7 +107,7 @@ router.post(
           name: row.name,
           email: row.email,
           avatarImage: row.avatar_image ?? '',
-          role: row.role === 'ADMIN' ? 'Admin' : 'Staff',
+          role: toApiRole(row),
         },
       });
     } catch (error) {
@@ -111,7 +135,7 @@ router.put(
       .trim()
       .isLength({ min: 6 })
       .withMessage('Password must be at least 6 characters'),
-    body('role').isIn(['Admin', 'Staff']).withMessage('Role must be Admin or Staff'),
+    body('role').isIn(['Owner', 'Admin', 'Staff']).withMessage('Role must be Owner, Admin, or Staff'),
   ],
   async (req, res) => {
     const errors = validationResult(req);
@@ -121,7 +145,8 @@ router.put(
 
     const memberId = Number(req.params.id);
     const { name, email, password, role, avatarImage } = req.body;
-    const dbRole = role === 'Admin' ? 'ADMIN' : 'STAFF';
+    const dbRole = toDbRole(role);
+    const isOwner = role === 'Owner';
     const imageValue = getImageValue(req.file, avatarImage);
 
     try {
@@ -134,6 +159,32 @@ router.put(
         return res.status(409).json({ message: 'Email already exists' });
       }
 
+      const existingMemberResult = await pool.query(
+        'SELECT user_id, is_owner FROM users WHERE user_id = $1',
+        [memberId]
+      );
+
+      if (!existingMemberResult.rows.length) {
+        return res.status(404).json({ message: 'Member not found' });
+      }
+
+      const existingMember = existingMemberResult.rows[0];
+
+      if (existingMember.is_owner && role !== 'Owner') {
+        return res.status(400).json({ message: 'Owner role cannot be changed' });
+      }
+
+      if (!existingMember.is_owner && isOwner) {
+        const ownerCheck = await pool.query(
+          'SELECT user_id FROM users WHERE is_owner = TRUE AND user_id <> $1 LIMIT 1',
+          [memberId]
+        );
+
+        if (ownerCheck.rows.length) {
+          return res.status(409).json({ message: 'An owner account already exists' });
+        }
+      }
+
       const nextPasswordHash = password ? await bcrypt.hash(password, 10) : null;
 
       const updated = await pool.query(
@@ -142,10 +193,19 @@ router.put(
              email = $2,
              avatar_image = $3,
              role = $4,
-             password_hash = COALESCE($5, password_hash)
-         WHERE user_id = $6
-         RETURNING user_id, name, email, avatar_image, role`,
-        [name, email, imageValue, dbRole, nextPasswordHash, memberId]
+             is_owner = $5,
+             password_hash = COALESCE($6, password_hash)
+         WHERE user_id = $7
+         RETURNING user_id, name, email, avatar_image, role, is_owner`,
+        [
+          name,
+          email,
+          imageValue,
+          dbRole,
+          existingMember.is_owner ? true : isOwner,
+          nextPasswordHash,
+          memberId,
+        ]
       );
 
       if (!updated.rows.length) {
@@ -159,7 +219,7 @@ router.put(
           name: row.name,
           email: row.email,
           avatarImage: row.avatar_image ?? '',
-          role: row.role === 'ADMIN' ? 'Admin' : 'Staff',
+          role: toApiRole(row),
         },
       });
     } catch (error) {
@@ -177,11 +237,17 @@ router.delete('/:id', requireAuth, requireAdmin, [param('id').isInt({ min: 1 })]
   const memberId = Number(req.params.id);
 
   try {
-    const deleted = await pool.query('DELETE FROM users WHERE user_id = $1 RETURNING user_id', [memberId]);
+    const memberResult = await pool.query('SELECT user_id, is_owner FROM users WHERE user_id = $1', [memberId]);
 
-    if (!deleted.rows.length) {
+    if (!memberResult.rows.length) {
       return res.status(404).json({ message: 'Member not found' });
     }
+
+    if (memberResult.rows[0].is_owner) {
+      return res.status(403).json({ message: 'Owner profile cannot be deleted' });
+    }
+
+    const deleted = await pool.query('DELETE FROM users WHERE user_id = $1 RETURNING user_id', [memberId]);
 
     return res.status(204).send();
   } catch (error) {

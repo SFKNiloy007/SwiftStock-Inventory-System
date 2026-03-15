@@ -33,7 +33,7 @@ const forgotPasswordValidators = [
 ];
 
 function createAuthPayload(user) {
-  const role = user.role === 'ADMIN' ? 'Admin' : 'Staff';
+  const role = user.is_owner ? 'Owner' : user.role === 'ADMIN' ? 'Admin' : 'Staff';
   const token = jwt.sign(
     {
       id: user.user_id,
@@ -74,7 +74,7 @@ router.post('/login', loginValidators, async (req, res) => {
 
   try {
     const userResult = await pool.query(
-      'SELECT user_id, name, email, role, password_hash FROM users WHERE email = $1',
+      'SELECT user_id, name, email, role, is_owner, password_hash FROM users WHERE email = $1',
       [email]
     );
 
@@ -109,7 +109,7 @@ router.post('/emergency-login', emergencyLoginValidators, async (req, res) => {
 
   try {
     const userResult = await pool.query(
-      'SELECT user_id, name, email, role FROM users WHERE email = $1',
+      'SELECT user_id, name, email, role, is_owner FROM users WHERE email = $1',
       [email]
     );
 
@@ -179,7 +179,7 @@ router.post('/register', registerValidators, async (req, res) => {
     const insertResult = await pool.query(
       `INSERT INTO users (name, email, password_hash, role)
        VALUES ($1, $2, $3, $4)
-       RETURNING user_id, name, email, role`,
+       RETURNING user_id, name, email, role, is_owner`,
       [name, email, passwordHash, dbRole]
     );
 
@@ -190,7 +190,7 @@ router.post('/register', registerValidators, async (req, res) => {
         id: user.user_id,
         name: user.name,
         email: user.email,
-        role: user.role === 'ADMIN' ? 'Admin' : 'Staff',
+        role: user.is_owner ? 'Owner' : user.role === 'ADMIN' ? 'Admin' : 'Staff',
       },
     });
   } catch (error) {

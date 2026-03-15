@@ -15,8 +15,10 @@ import { TeamManagementPage } from './pages/TeamManagementPage';
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [accountRole, setAccountRole] = useState<UserRole>('Admin');
-  const [userRole, setUserRole] = useState<UserRole>('Admin');
+  const [accountRole, setAccountRole] = useState<UserRole>('Owner');
+  const [userRole, setUserRole] = useState<UserRole>('Owner');
+
+  const hasAdminAccess = (role: UserRole) => role === 'Admin' || role === 'Owner';
 
   useEffect(() => {
     const savedToken = window.localStorage.getItem('swiftstock-token');
@@ -27,11 +29,11 @@ export default function App() {
       setIsAuthenticated(true);
     }
 
-    if (savedAccountRole === 'Admin' || savedAccountRole === 'Staff') {
+    if (savedAccountRole === 'Owner' || savedAccountRole === 'Admin' || savedAccountRole === 'Staff') {
       setAccountRole(savedAccountRole);
     }
 
-    if (savedRole === 'Admin' || savedRole === 'Staff') {
+    if (savedRole === 'Owner' || savedRole === 'Admin' || savedRole === 'Staff') {
       setUserRole(savedRole);
     }
   }, []);
@@ -45,7 +47,7 @@ export default function App() {
   }, [userRole]);
 
   const defaultRoute = useMemo(
-    () => (accountRole === 'Admin' ? '/dashboard' : '/staff-dashboard'),
+    () => (hasAdminAccess(accountRole) ? '/dashboard' : '/staff-dashboard'),
     [accountRole]
   );
 
@@ -97,7 +99,7 @@ export default function App() {
           <Route
             path="dashboard"
             element={
-              accountRole === 'Admin' ? <DashboardPage /> : <Navigate to="/staff-dashboard" replace />
+              hasAdminAccess(accountRole) ? <DashboardPage /> : <Navigate to="/staff-dashboard" replace />
             }
           />
           <Route
@@ -112,14 +114,14 @@ export default function App() {
               <InventoryPage
                 userRole={userRole}
                 onRoleChange={handleRoleChange}
-                canChangeRole={accountRole === 'Admin'}
-                canUseAdminFeatures={accountRole === 'Admin' && userRole === 'Admin'}
+                canChangeRole={hasAdminAccess(accountRole)}
+                canUseAdminFeatures={hasAdminAccess(accountRole) && hasAdminAccess(userRole)}
               />
             }
           />
           <Route
             path="team"
-            element={accountRole === 'Admin' ? <TeamManagementPage /> : <Navigate to="/staff-dashboard" replace />}
+            element={hasAdminAccess(accountRole) ? <TeamManagementPage /> : <Navigate to="/staff-dashboard" replace />}
           />
           <Route path="sales-history" element={<SalesHistoryPage />} />
           <Route path="suppliers" element={<SuppliersPage />} />

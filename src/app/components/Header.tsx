@@ -52,6 +52,17 @@ export function Header({
           <div className="flex items-center gap-2 rounded-[12px] border border-[#f1f5f9] bg-white p-1 shadow-[0_4px_20px_rgba(0,0,0,0.05)]">
             <button
               type="button"
+              onClick={() => onRoleChange('Owner')}
+              className={`rounded-[12px] px-3 py-1.5 text-sm transition-colors ${
+                userRole === 'Owner'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Owner
+            </button>
+            <button
+              type="button"
               onClick={() => onRoleChange('Admin')}
               className={`rounded-[12px] px-3 py-1.5 text-sm transition-colors ${
                 userRole === 'Admin'

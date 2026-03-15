@@ -60,6 +60,7 @@ export function InventoryPage({
   canChangeRole,
   canUseAdminFeatures,
 }: InventoryPageProps) {
+  const hasAdminAccess = userRole === 'Admin' || userRole === 'Owner';
   const [searchExpanded, setSearchExpanded] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
@@ -352,7 +353,7 @@ export function InventoryPage({
             <p className="text-sm text-gray-500">Total Stock</p>
             <p className="mt-1 text-2xl font-semibold text-gray-900">{totalStock}</p>
           </div>
-          {userRole === 'Admin' && (
+          {hasAdminAccess && (
             <div className="rounded-[12px] border border-[#f1f5f9] bg-white p-4 shadow-[0_4px_20px_rgba(0,0,0,0.05)]">
               <p className="text-sm text-gray-500">Daily Profit</p>
               <p className="mt-1 text-2xl font-semibold text-gray-900">৳ {dailyProfit.toFixed(2)}</p>

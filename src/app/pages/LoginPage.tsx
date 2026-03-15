@@ -115,11 +115,11 @@ export function LoginPage({ onLogin }: LoginPageProps) {
       });
 
       const { token, user } = response.data;
-      const resolvedRole = (user?.role === 'Admin' || user?.role === 'Staff') ? user.role : selectedRole;
+      const resolvedRole = (user?.role === 'Owner' || user?.role === 'Admin' || user?.role === 'Staff') ? user.role : selectedRole;
 
       setAuthError('');
       onLogin(resolvedRole, token);
-      navigate(resolvedRole === 'Admin' ? '/dashboard' : '/staff-dashboard', { replace: true });
+      navigate(resolvedRole === 'Staff' ? '/staff-dashboard' : '/dashboard', { replace: true });
     } catch (error: any) {
       const message = error?.response?.data?.message ?? 'Login failed. Please try again.';
       setAuthError(message);
@@ -176,13 +176,13 @@ export function LoginPage({ onLogin }: LoginPageProps) {
       });
 
       const { token, user } = response.data;
-      const resolvedRole = user?.role === 'Admin' || user?.role === 'Staff' ? user.role : 'Staff';
+      const resolvedRole = user?.role === 'Owner' || user?.role === 'Admin' || user?.role === 'Staff' ? user.role : 'Staff';
 
       setRecoveryError('');
       setRecoveryMessage('Emergency login successful.');
       setIsRecoveryOpen(false);
       onLogin(resolvedRole, token);
-      navigate(resolvedRole === 'Admin' ? '/dashboard' : '/staff-dashboard', { replace: true });
+      navigate(resolvedRole === 'Staff' ? '/staff-dashboard' : '/dashboard', { replace: true });
     } catch (error: any) {
       const message = error?.response?.data?.message ?? 'Emergency login failed';
       setRecoveryError(message);

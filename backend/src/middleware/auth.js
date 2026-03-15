@@ -19,7 +19,9 @@ export function requireAuth(req, res, next) {
 }
 
 export function requireAdmin(req, res, next) {
-  if (!req.user || req.user.role !== 'Admin') {
+  const hasAdminAccess = req.user && (req.user.role === 'Admin' || req.user.role === 'Owner');
+
+  if (!hasAdminAccess) {
     return res.status(403).json({ message: 'Admin access required' });
   }
 
