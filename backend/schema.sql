@@ -40,8 +40,35 @@ CREATE TABLE IF NOT EXISTS suppliers (
   created_at TIMESTAMP DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS sales (
+  sale_id SERIAL PRIMARY KEY,
+  sold_by_user_id INTEGER NOT NULL REFERENCES users(user_id) ON DELETE RESTRICT,
+  total_amount NUMERIC(12,2) NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS sale_items (
+  sale_item_id SERIAL PRIMARY KEY,
+  sale_id INTEGER NOT NULL REFERENCES sales(sale_id) ON DELETE CASCADE,
+  product_id INTEGER NOT NULL REFERENCES products(product_id) ON DELETE RESTRICT,
+  quantity INTEGER NOT NULL CHECK (quantity > 0),
+  unit_price NUMERIC(12,2) NOT NULL,
+  unit_cost NUMERIC(12,2) NOT NULL,
+  line_total NUMERIC(12,2) NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 CREATE INDEX IF NOT EXISTS idx_products_name_lower
 ON products (LOWER(product_name));
 
 CREATE INDEX IF NOT EXISTS idx_products_category_lower
 ON products (LOWER(category));
+
+CREATE INDEX IF NOT EXISTS idx_sales_user_id
+ON sales (sold_by_user_id);
+
+CREATE INDEX IF NOT EXISTS idx_sale_items_sale_id
+ON sale_items (sale_id);
+
+CREATE INDEX IF NOT EXISTS idx_sale_items_product_id
+ON sale_items (product_id);

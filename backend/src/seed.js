@@ -75,6 +75,28 @@ async function seed() {
       )
     `);
 
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS sales (
+        sale_id SERIAL PRIMARY KEY,
+        sold_by_user_id INTEGER NOT NULL REFERENCES users(user_id) ON DELETE RESTRICT,
+        total_amount NUMERIC(12,2) NOT NULL DEFAULT 0,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS sale_items (
+        sale_item_id SERIAL PRIMARY KEY,
+        sale_id INTEGER NOT NULL REFERENCES sales(sale_id) ON DELETE CASCADE,
+        product_id INTEGER NOT NULL REFERENCES products(product_id) ON DELETE RESTRICT,
+        quantity INTEGER NOT NULL CHECK (quantity > 0),
+        unit_price NUMERIC(12,2) NOT NULL,
+        unit_cost NUMERIC(12,2) NOT NULL,
+        line_total NUMERIC(12,2) NOT NULL,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+
     const suppliersCount = await pool.query('SELECT COUNT(*)::int AS count FROM suppliers');
 
     if (suppliersCount.rows[0].count === 0) {
