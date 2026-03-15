@@ -146,4 +146,38 @@ router.patch(
   }
 );
 
+router.delete(
+  '/:code',
+  requireAuth,
+  requireAdmin,
+  [param('code').trim().notEmpty().withMessage('Supplier code is required')],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ message: 'Validation failed', errors: errors.array() });
+    }
+
+    const supplierCode = req.params.code;
+
+    try {
+      await ensureSuppliersTable();
+
+      const deleted = await pool.query(
+        `DELETE FROM suppliers
+         WHERE supplier_code = $1
+         RETURNING supplier_code`,
+        [supplierCode]
+      );
+
+      if (!deleted.rows.length) {
+        return res.status(404).json({ message: 'Supplier not found' });
+      }
+
+      return res.status(204).send();
+    } catch (error) {
+      return res.status(500).json({ message: 'Failed to delete supplier', error: error.message });
+    }
+  }
+);
+
 export default router;

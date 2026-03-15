@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Building2, Plus } from 'lucide-react';
+import { Building2, Plus, Trash2 } from 'lucide-react';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
@@ -106,6 +106,22 @@ export function SuppliersPage() {
     }
   };
 
+  const deleteSupplier = async (supplier: Supplier) => {
+    const confirmed = window.confirm(`Delete supplier ${supplier.name}?`);
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      await apiClient.delete(`/suppliers/${supplier.id}`);
+      setErrorMessage('');
+      await loadSuppliers();
+    } catch (error: any) {
+      setErrorMessage(error?.response?.data?.message ?? 'Failed to delete supplier');
+    }
+  };
+
   return (
     <section className="space-y-6 p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -167,14 +183,24 @@ export function SuppliersPage() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => toggleSupplierStatus(supplier)}
-                      className="min-w-24"
-                    >
-                      Mark {supplier.status === 'Active' ? 'Pending' : 'Active'}
-                    </Button>
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => toggleSupplierStatus(supplier)}
+                        className="min-w-24"
+                      >
+                        Mark {supplier.status === 'Active' ? 'Pending' : 'Active'}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => deleteSupplier(supplier)}
+                        className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
