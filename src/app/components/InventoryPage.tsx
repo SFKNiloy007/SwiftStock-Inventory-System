@@ -71,6 +71,7 @@ export function InventoryPage({
   const [pageSize] = useState(20);
   const [totalProductsCount, setTotalProductsCount] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
+  const [dailyProfit, setDailyProfit] = useState(0);
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [sellingProductId, setSellingProductId] = useState<number | null>(null);
   const [productError, setProductError] = useState('');
@@ -181,11 +182,6 @@ export function InventoryPage({
 
   const inventoryValue = useMemo(
     () => products.reduce((sum, product) => sum + product.retailPrice * product.stockLevel, 0),
-    [products]
-  );
-
-  const dailyProfit = useMemo(
-    () => products.reduce((sum, product) => sum + (product.retailPrice - product.costPrice) * 2, 0),
     [products]
   );
 
@@ -328,6 +324,8 @@ export function InventoryPage({
       setProducts((current) =>
         current.map((item) => (item.id === updatedProduct.id ? { ...item, ...updatedProduct } : item))
       );
+
+      setDailyProfit((currentProfit) => currentProfit + (updatedProduct.retailPrice - updatedProduct.costPrice));
 
       productCacheRef.current.clear();
       toast.success(`Sold 1 unit of ${product.name}`);
