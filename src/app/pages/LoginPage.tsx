@@ -51,16 +51,12 @@ export function LoginPage({ onLogin }: LoginPageProps) {
   const resolvedLoginSideImage = customSideImage || loginSideImage;
 
   useEffect(() => {
-    if (!allowLoginImageUpload) {
-      return;
-    }
-
     const savedImage = window.localStorage.getItem(customImageStorageKey);
 
     if (savedImage) {
       setCustomSideImage(savedImage);
     }
-  }, [allowLoginImageUpload, customImageStorageKey]);
+  }, [customImageStorageKey]);
 
   useEffect(() => {
     if (!allowLoginImageUpload) {
