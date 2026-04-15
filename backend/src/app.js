@@ -15,11 +15,12 @@ const configuredOrigins = (process.env.CORS_ORIGINS ?? '')
   .map((origin) => origin.trim())
   .filter(Boolean);
 const allowedOrigins = new Set([...defaultOrigins, ...configuredOrigins]);
+const localhostPattern = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i;
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.has(origin)) {
+      if (!origin || allowedOrigins.has(origin) || localhostPattern.test(origin)) {
         return callback(null, true);
       }
 

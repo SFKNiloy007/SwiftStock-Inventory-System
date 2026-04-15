@@ -69,6 +69,8 @@ export function TeamManagementPage() {
     [members]
   );
 
+  const isEditingStaffMember = Boolean(editingId && role === 'Staff');
+
   const resetForm = () => {
     setName('');
     setEmail('');
@@ -278,7 +280,7 @@ export function TeamManagementPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="team-password">
-                {editingId ? 'New Password (optional)' : 'Password'}
+                {editingId ? (role === 'Staff' ? 'Set New Staff Password (optional)' : 'New Password (optional)') : 'Password'}
               </Label>
               <Input
                 id="team-password"
@@ -287,6 +289,21 @@ export function TeamManagementPage() {
                 onChange={(event) => setPassword(event.target.value)}
                 placeholder={editingId ? 'Leave blank to keep current password' : 'Enter password'}
               />
+              {isEditingStaffMember && (
+                <>
+                  <Label htmlFor="team-current-password">Current Staff Password</Label>
+                  <Input
+                    id="team-current-password"
+                    type="text"
+                    value="Hidden for security (stored as hash)"
+                    disabled
+                    aria-label="Current staff password is hidden for security"
+                  />
+                  <p className="text-xs text-gray-500">
+                    Staff current password cannot be viewed. You can set a new password above.
+                  </p>
+                </>
+              )}
             </div>
             <div className="space-y-2">
               <Label>Role</Label>

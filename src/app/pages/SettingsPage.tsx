@@ -25,6 +25,7 @@ export function SettingsPage({ userRole }: SettingsPageProps) {
   const [uploadMessage, setUploadMessage] = useState('');
   const [uploadError, setUploadError] = useState('');
   const canManageLoginImage = userRole === 'Admin' || userRole === 'Owner';
+  const canManageAdminEmail = userRole === 'Admin' || userRole === 'Owner';
 
   const hasCustomLoginImage = useMemo(
     () => Boolean(window.localStorage.getItem(loginImageStorageKey)),
@@ -84,12 +85,25 @@ export function SettingsPage({ userRole }: SettingsPageProps) {
           </div>
           <div className="space-y-2">
             <Label htmlFor="admin-email">Admin Email</Label>
-            <Input
-              id="admin-email"
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-            />
+            {canManageAdminEmail ? (
+              <Input
+                id="admin-email"
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+              />
+            ) : (
+              <>
+                <Input
+                  id="admin-email"
+                  type="text"
+                  value="Restricted in Staff view"
+                  disabled
+                  aria-label="Admin email is restricted for staff"
+                />
+                <p className="text-xs text-gray-500">Only Owner/Admin can view or edit admin email.</p>
+              </>
+            )}
           </div>
         </CardContent>
       </Card>

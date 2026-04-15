@@ -1,4 +1,4 @@
-import { DollarSign, Receipt } from 'lucide-react';
+import { Coins, Receipt } from 'lucide-react';
 import { Badge } from '../components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import {
@@ -36,7 +36,7 @@ export function SalesHistoryPage() {
     .reduce((sum, transaction) => sum + transaction.totalAmount, 0);
 
   const formatCurrency = (amount: number) =>
-    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+    new Intl.NumberFormat('en-BD', { style: 'currency', currency: 'BDT' }).format(amount);
 
   const formatDate = (dateString: string) =>
     new Date(dateString).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -52,7 +52,7 @@ export function SalesHistoryPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Today's Revenue</CardTitle>
-            <DollarSign className="h-4 w-4 text-gray-500" />
+            <Coins className="h-4 w-4 text-gray-500" />
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-semibold">{formatCurrency(todayRevenue)}</p>
