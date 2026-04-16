@@ -55,20 +55,25 @@ export async function testDbConnection() {
   } catch (error) {
     const message = String(error?.message || '');
     const requiresSsl = message.includes('SSL/TLS required');
-    const shouldAttemptFallback =
-      requiresSsl ||
-      message.includes('Connection terminated unexpectedly') ||
-      message.includes('no pg_hba.conf entry') ||
-      message.includes('server does not support SSL') ||
-      message.includes('self-signed certificate');
+    const serverDoesNotSupportSsl = message.includes('server does not support SSL');
+    const pgHbaSuggestsSsl =
+      message.includes('no pg_hba.conf entry') &&
+      (message.includes('SSL off') || message.includes('SSL/TLS'));
 
-    if (!shouldAttemptFallback) {
-      throw error;
+    // Only flip SSL mode when the server explicitly tells us what it needs.
+    if ((requiresSsl || pgHbaSuggestsSsl) && !sslEnabled) {
+      await rebuildPool(true);
+      await pool.query('SELECT 1');
+      return;
     }
 
-    // Render databases can explicitly require TLS; force-enable SSL in that case.
-    const nextSslMode = requiresSsl ? true : !sslEnabled;
-    await rebuildPool(nextSslMode);
-    await pool.query('SELECT 1');
+    if (serverDoesNotSupportSsl && sslEnabled) {
+      await rebuildPool(false);
+      await pool.query('SELECT 1');
+      return;
+    }
+
+    // For transient termination errors, keep the same SSL mode and let outer retry loop handle attempts.
+    throw error;
   }
 }
