@@ -54,7 +54,9 @@ export async function testDbConnection() {
     await pool.query('SELECT 1');
   } catch (error) {
     const message = String(error?.message || '');
+    const requiresSsl = message.includes('SSL/TLS required');
     const shouldAttemptFallback =
+      requiresSsl ||
       message.includes('Connection terminated unexpectedly') ||
       message.includes('no pg_hba.conf entry') ||
       message.includes('server does not support SSL') ||
@@ -64,7 +66,9 @@ export async function testDbConnection() {
       throw error;
     }
 
-    await rebuildPool(!sslEnabled);
+    // Render databases can explicitly require TLS; force-enable SSL in that case.
+    const nextSslMode = requiresSsl ? true : !sslEnabled;
+    await rebuildPool(nextSslMode);
     await pool.query('SELECT 1');
   }
 }
