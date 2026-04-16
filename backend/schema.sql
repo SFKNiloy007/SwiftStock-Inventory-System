@@ -47,6 +47,28 @@ CREATE TABLE IF NOT EXISTS sales (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+ALTER TABLE sales
+ADD COLUMN IF NOT EXISTS sold_by_user_id INTEGER;
+
+ALTER TABLE sales
+ADD COLUMN IF NOT EXISTS total_amount NUMERIC(12,2) NOT NULL DEFAULT 0;
+
+ALTER TABLE sales
+ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_constraint
+    WHERE conname = 'fk_sales_sold_by_user_id'
+  ) THEN
+    ALTER TABLE sales
+    ADD CONSTRAINT fk_sales_sold_by_user_id
+    FOREIGN KEY (sold_by_user_id) REFERENCES users(user_id) ON DELETE RESTRICT;
+  END IF;
+END $$;
+
 CREATE TABLE IF NOT EXISTS sale_items (
   sale_item_id SERIAL PRIMARY KEY,
   sale_id INTEGER NOT NULL REFERENCES sales(sale_id) ON DELETE CASCADE,
@@ -57,6 +79,53 @@ CREATE TABLE IF NOT EXISTS sale_items (
   line_total NUMERIC(12,2) NOT NULL,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+ALTER TABLE sale_items
+ADD COLUMN IF NOT EXISTS sale_id INTEGER;
+
+ALTER TABLE sale_items
+ADD COLUMN IF NOT EXISTS product_id INTEGER;
+
+ALTER TABLE sale_items
+ADD COLUMN IF NOT EXISTS quantity INTEGER;
+
+ALTER TABLE sale_items
+ADD COLUMN IF NOT EXISTS unit_price NUMERIC(12,2);
+
+ALTER TABLE sale_items
+ADD COLUMN IF NOT EXISTS unit_cost NUMERIC(12,2);
+
+ALTER TABLE sale_items
+ADD COLUMN IF NOT EXISTS line_total NUMERIC(12,2);
+
+ALTER TABLE sale_items
+ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_constraint
+    WHERE conname = 'fk_sale_items_sale_id'
+  ) THEN
+    ALTER TABLE sale_items
+    ADD CONSTRAINT fk_sale_items_sale_id
+    FOREIGN KEY (sale_id) REFERENCES sales(sale_id) ON DELETE CASCADE;
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_constraint
+    WHERE conname = 'fk_sale_items_product_id'
+  ) THEN
+    ALTER TABLE sale_items
+    ADD CONSTRAINT fk_sale_items_product_id
+    FOREIGN KEY (product_id) REFERENCES products(product_id) ON DELETE RESTRICT;
+  END IF;
+END $$;
 
 CREATE INDEX IF NOT EXISTS idx_products_name_lower
 ON products (LOWER(product_name));
