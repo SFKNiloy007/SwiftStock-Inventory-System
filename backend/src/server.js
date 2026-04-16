@@ -30,9 +30,9 @@ function validateSecurityConfiguration() {
 async function startServer() {
   try {
     validateSecurityConfiguration();
+    await testDbConnection();
     await applySchemaFromFile();
     await ensureDefaultAdmin();
-    await testDbConnection();
     app.listen(PORT, HOST, () => {
       console.log(`SwiftStock API running on http://localhost:${PORT}`);
       console.log(`IPv4 loopback: http://127.0.0.1:${PORT}`);
