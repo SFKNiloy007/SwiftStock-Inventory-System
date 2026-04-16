@@ -40,6 +40,14 @@ services:
         fromDatabase:
           name: swiftstock-db
           property: database
+      - key: DB_SSL
+        value: "true"
+      - key: EMERGENCY_LOGIN_PIN
+        generateValue: true
+      - key: FLUSH_PASSWORD
+        generateValue: true
+      - key: DEFAULT_ADMIN_PASSWORD
+        sync: false
       - key: CORS_ORIGINS
         sync: false
 
