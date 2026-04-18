@@ -1,17 +1,28 @@
-import { useEffect, useMemo, useState } from 'react';
+import { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { InventoryPage } from './components/InventoryPage';
 import { UserRole } from './components/types';
 import { Toaster } from './components/ui/sonner';
-import { AnalyticsPage } from './pages/AnalyticsPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { LoginPage } from './pages/LoginPage';
 import { MainLayout } from './pages/MainLayout';
-import { SalesHistoryPage } from './pages/SalesHistoryPage';
-import { SettingsPage } from './pages/SettingsPage';
 import { StaffDashboardPage } from './pages/StaffDashboardPage';
-import { SuppliersPage } from './pages/SuppliersPage';
-import { TeamManagementPage } from './pages/TeamManagementPage';
+
+const AnalyticsPage = lazy(() =>
+  import('./pages/AnalyticsPage').then((module) => ({ default: module.AnalyticsPage }))
+);
+const SalesHistoryPage = lazy(() =>
+  import('./pages/SalesHistoryPage').then((module) => ({ default: module.SalesHistoryPage }))
+);
+const SettingsPage = lazy(() =>
+  import('./pages/SettingsPage').then((module) => ({ default: module.SettingsPage }))
+);
+const SuppliersPage = lazy(() =>
+  import('./pages/SuppliersPage').then((module) => ({ default: module.SuppliersPage }))
+);
+const TeamManagementPage = lazy(() =>
+  import('./pages/TeamManagementPage').then((module) => ({ default: module.TeamManagementPage }))
+);
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -77,60 +88,62 @@ export default function App() {
   return (
     <BrowserRouter>
       <Toaster />
-      <Routes>
-        <Route
-          path="/login"
-          element={
-            isAuthenticated ? <Navigate to={defaultRoute} replace /> : <LoginPage onLogin={handleLogin} />
-          }
-        />
+      <Suspense fallback={<div className="p-6 text-sm text-gray-500">Loading page...</div>}>
+        <Routes>
+          <Route
+            path="/login"
+            element={
+              isAuthenticated ? <Navigate to={defaultRoute} replace /> : <LoginPage onLogin={handleLogin} />
+            }
+          />
 
-        <Route
-          path="/"
-          element={
-            isAuthenticated ? (
-              <MainLayout userRole={accountRole} onLogout={handleLogout} />
-            ) : (
-              <Navigate to="/login" replace />
-            )
-          }
-        >
-          <Route index element={<Navigate to={defaultRoute} replace />} />
           <Route
-            path="dashboard"
+            path="/"
             element={
-              hasAdminAccess(accountRole) ? <DashboardPage /> : <Navigate to="/staff-dashboard" replace />
+              isAuthenticated ? (
+                <MainLayout userRole={accountRole} onLogout={handleLogout} />
+              ) : (
+                <Navigate to="/login" replace />
+              )
             }
-          />
-          <Route
-            path="staff-dashboard"
-            element={
-              accountRole === 'Staff' ? <StaffDashboardPage /> : <Navigate to="/dashboard" replace />
-            }
-          />
-          <Route
-            path="products"
-            element={
-              <InventoryPage
-                userRole={userRole}
-                onRoleChange={handleRoleChange}
-                canChangeRole={hasAdminAccess(accountRole)}
-                canUseAdminFeatures={hasAdminAccess(accountRole) && hasAdminAccess(userRole)}
-              />
-            }
-          />
-          <Route
-            path="team"
-            element={hasAdminAccess(accountRole) ? <TeamManagementPage /> : <Navigate to="/staff-dashboard" replace />}
-          />
-          <Route path="sales-history" element={<SalesHistoryPage />} />
-          <Route path="suppliers" element={<SuppliersPage />} />
-          <Route path="analytics" element={<AnalyticsPage />} />
-          <Route path="settings" element={<SettingsPage userRole={accountRole} />} />
-        </Route>
+          >
+            <Route index element={<Navigate to={defaultRoute} replace />} />
+            <Route
+              path="dashboard"
+              element={
+                hasAdminAccess(accountRole) ? <DashboardPage /> : <Navigate to="/staff-dashboard" replace />
+              }
+            />
+            <Route
+              path="staff-dashboard"
+              element={
+                accountRole === 'Staff' ? <StaffDashboardPage /> : <Navigate to="/dashboard" replace />
+              }
+            />
+            <Route
+              path="products"
+              element={
+                <InventoryPage
+                  userRole={userRole}
+                  onRoleChange={handleRoleChange}
+                  canChangeRole={hasAdminAccess(accountRole)}
+                  canUseAdminFeatures={hasAdminAccess(accountRole) && hasAdminAccess(userRole)}
+                />
+              }
+            />
+            <Route
+              path="team"
+              element={hasAdminAccess(accountRole) ? <TeamManagementPage /> : <Navigate to="/staff-dashboard" replace />}
+            />
+            <Route path="sales-history" element={<SalesHistoryPage />} />
+            <Route path="suppliers" element={<SuppliersPage />} />
+            <Route path="analytics" element={<AnalyticsPage />} />
+            <Route path="settings" element={<SettingsPage userRole={userRole} />} />
+          </Route>
 
-        <Route path="*" element={<Navigate to={isAuthenticated ? defaultRoute : '/login'} replace />} />
-      </Routes>
+          <Route path="*" element={<Navigate to={isAuthenticated ? defaultRoute : '/login'} replace />} />
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   );
 }

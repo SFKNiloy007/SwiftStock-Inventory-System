@@ -41,6 +41,7 @@ export function TeamManagementPage() {
   const [role, setRole] = useState<UserRole>('Staff');
   const [avatarImage, setAvatarImage] = useState('');
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -72,6 +73,11 @@ export function TeamManagementPage() {
   const isEditingStaffMember = Boolean(editingId && role === 'Staff');
 
   const resetForm = () => {
+    if (avatarPreviewUrl) {
+      URL.revokeObjectURL(avatarPreviewUrl);
+      setAvatarPreviewUrl(null);
+    }
+
     setName('');
     setEmail('');
     setPassword('');
@@ -87,6 +93,11 @@ export function TeamManagementPage() {
   };
 
   const openForEdit = (member: TeamMember) => {
+    if (avatarPreviewUrl) {
+      URL.revokeObjectURL(avatarPreviewUrl);
+      setAvatarPreviewUrl(null);
+    }
+
     setEditingId(member.id);
     setName(member.name);
     setEmail(member.email);
@@ -98,6 +109,11 @@ export function TeamManagementPage() {
   };
 
   const handleAvatarFileChange = (file: File | null) => {
+    if (avatarPreviewUrl) {
+      URL.revokeObjectURL(avatarPreviewUrl);
+      setAvatarPreviewUrl(null);
+    }
+
     setAvatarFile(file);
 
     if (!file) {
@@ -105,8 +121,17 @@ export function TeamManagementPage() {
     }
 
     const previewUrl = URL.createObjectURL(file);
+    setAvatarPreviewUrl(previewUrl);
     setAvatarImage(previewUrl);
   };
+
+  useEffect(() => {
+    return () => {
+      if (avatarPreviewUrl) {
+        URL.revokeObjectURL(avatarPreviewUrl);
+      }
+    };
+  }, [avatarPreviewUrl]);
 
   const handleSave = () => {
     if (!name.trim() || !email.trim()) {
@@ -324,6 +349,11 @@ export function TeamManagementPage() {
                 id="team-avatar-url"
                 value={avatarFile ? '' : avatarImage}
                 onChange={(event) => {
+                  if (avatarPreviewUrl) {
+                    URL.revokeObjectURL(avatarPreviewUrl);
+                    setAvatarPreviewUrl(null);
+                  }
+
                   setAvatarFile(null);
                   setAvatarImage(event.target.value);
                 }}
